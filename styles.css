@@ -137,7 +137,7 @@ body {
   position: relative;
   min-height: 0;
   height: 100%;
-  padding: 16px 18px;
+  padding: 14px 16px;
   border-radius: 24px;
   overflow: hidden;
 }
@@ -224,12 +224,12 @@ body {
 }
 
 .metric-value span {
-  font-size: clamp(30px, 2.2vw, 42px);
+  font-size: clamp(26px, 1.95vw, 38px);
   line-height: 1;
 }
 
 .metric-value small {
-  font-size: 18px;
+  font-size: 16px;
   color: var(--muted);
 }
 
@@ -256,7 +256,7 @@ body {
 .metric-state {
   position: relative;
   z-index: 1;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -279,7 +279,7 @@ body {
 
 .clock-value {
   margin-top: 10px;
-  font-size: clamp(38px, 3.2vw, 54px);
+  font-size: clamp(34px, 2.6vw, 48px);
   font-weight: 800;
   line-height: 1;
 }
@@ -301,7 +301,7 @@ body {
 }
 
 .alert-title {
-  font-size: clamp(28px, 2vw, 34px);
+  font-size: clamp(24px, 1.7vw, 30px);
   font-weight: 900;
   line-height: 1;
   color: var(--neutral);
@@ -385,6 +385,125 @@ body {
   margin-top: 14px;
   border-radius: 22px;
   padding: 12px 18px;
+}
+
+@media (min-width: 1181px) and (max-height: 930px) {
+  .page-shell {
+    padding: 10px 12px 12px;
+  }
+
+  .topbar {
+    padding: 10px 16px;
+    margin-bottom: 10px;
+  }
+
+  .eyebrow {
+    margin-bottom: 3px;
+    font-size: 11px;
+  }
+
+  .topbar h1 {
+    font-size: 26px;
+  }
+
+  .dashboard-grid {
+    gap: 12px;
+  }
+
+  .metrics-panel {
+    gap: 12px;
+  }
+
+  .metric-card {
+    padding: 12px 14px;
+  }
+
+  .metric-head h2,
+  .side-card h2 {
+    font-size: 16px;
+  }
+
+  .metric-head p,
+  .alert-summary,
+  .clock-date,
+  .clock-subtext,
+  .chips-block p {
+    font-size: 12px;
+  }
+
+  .metric-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .metric-value {
+    margin: 10px 0 8px;
+  }
+
+  .metric-value span {
+    font-size: 24px;
+  }
+
+  .metric-value small {
+    font-size: 14px;
+  }
+
+  .sparkline {
+    height: 34px;
+  }
+
+  .metric-state {
+    font-size: 15px;
+  }
+
+  .sidebar-panel {
+    gap: 12px;
+  }
+
+  .side-card {
+    padding: 14px 16px;
+  }
+
+  .clock-value {
+    font-size: 42px;
+  }
+
+  .alert-box {
+    margin-top: 10px;
+    padding: 12px;
+  }
+
+  .alert-title {
+    font-size: 22px;
+  }
+
+  .status-grid {
+    margin-top: 10px;
+    gap: 6px;
+  }
+
+  .status-row {
+    padding-bottom: 6px;
+  }
+
+  .chips-block {
+    margin-top: 10px;
+  }
+
+  .chip {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .bottom-panel {
+    margin-top: 10px;
+    padding: 10px 14px;
+  }
+
+  .panel-line {
+    font-size: 13px;
+  }
 }
 
 .panel-line {
