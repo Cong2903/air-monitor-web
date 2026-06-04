@@ -2,7 +2,6 @@ const dashboardConfig = window.dashboardConfig || {};
 const appState = {
   latest: null,
   history: [],
-  timerId: null,
   lastSyncText: "Chua dong bo cloud"
 };
 
@@ -208,47 +207,28 @@ function showSetupState(message) {
   setText("last-sync", message);
 }
 
-function cleanupJsonpTag() {
-  const staleTag = document.getElementById("jsonp-loader");
-  if (staleTag) {
-    staleTag.remove();
-  }
-}
-
 function fetchDashboardData() {
-  if (!dashboardConfig.apiBaseUrl || dashboardConfig.apiBaseUrl.includes("REPLACE_WITH")) {
-    showSetupState("Chua cau hinh API");
+  if (!dashboardConfig.dataUrl) {
+    showSetupState("Chua cau hinh file JSON");
     return;
   }
-
-  cleanupJsonpTag();
-  const callbackName = "__node2DashboardCallback";
-  window[callbackName] = (payload) => {
-    if (appState.timerId) {
-      clearTimeout(appState.timerId);
-      appState.timerId = null;
-    }
-
-    if (payload && payload.ok !== false) {
-      renderDashboard(payload);
-    } else {
-      showSetupState("Cloud khong tra du lieu");
-    }
-
-    cleanupJsonpTag();
-  };
-
-  const script = document.createElement("script");
-  script.id = "jsonp-loader";
-  script.src = `${dashboardConfig.apiBaseUrl}?mode=latest&callback=${callbackName}&t=${Date.now()}`;
-  script.async = true;
-  script.onerror = () => showSetupState("Khong tai duoc du lieu cloud");
-  document.body.appendChild(script);
-
-  appState.timerId = window.setTimeout(() => {
-    showSetupState("Cloud phan hoi cham");
-    cleanupJsonpTag();
-  }, 10000);
+  fetch(`${dashboardConfig.dataUrl}?t=${Date.now()}`, { cache: "no-store" })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Khong doc duoc file JSON");
+      }
+      return response.json();
+    })
+    .then((payload) => {
+      if (payload && payload.ok !== false) {
+        renderDashboard(payload);
+      } else {
+        showSetupState("File JSON khong hop le");
+      }
+    })
+    .catch(() => {
+      showSetupState("Khong tai duoc du lieu JSON");
+    });
 }
 
 function bootstrap() {

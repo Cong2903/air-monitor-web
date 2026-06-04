@@ -1,0 +1,35 @@
+{
+  "ok": true,
+  "latest": {
+    "packetId": 12,
+    "deviceName": "HE THONG GIAM SAT NODE 2",
+    "location": "Ha Noi, VN",
+    "serverTimestampIso": "2026-06-04T12:00:00+07:00",
+    "alertLevel": "stable",
+    "alertText": "ON DINH",
+    "alertSummary": "He thong hoat dong binh thuong",
+    "packetFresh": true,
+    "wifiConnected": true,
+    "wifiRssi": -53,
+    "heaterOn": false,
+    "fanOn": false,
+    "buzzerOn": false,
+    "bme680Status": "OK",
+    "bh1750Status": "OK",
+    "mq9Status": "OK",
+    "temperatureC": 26.8,
+    "humidityPct": 65,
+    "pressureHpa": 1015.4,
+    "gasKOhms": 14.2,
+    "lightLux": 482,
+    "mq9Ppm": 135
+  },
+  "history": [
+    { "temperatureC": 26.1, "humidityPct": 64, "pressureHpa": 1014.9, "lightLux": 420, "mq9Ppm": 128 },
+    { "temperatureC": 26.3, "humidityPct": 64, "pressureHpa": 1015.0, "lightLux": 430, "mq9Ppm": 130 },
+    { "temperatureC": 26.4, "humidityPct": 64, "pressureHpa": 1015.1, "lightLux": 441, "mq9Ppm": 132 },
+    { "temperatureC": 26.5, "humidityPct": 65, "pressureHpa": 1015.1, "lightLux": 452, "mq9Ppm": 133 },
+    { "temperatureC": 26.6, "humidityPct": 65, "pressureHpa": 1015.2, "lightLux": 464, "mq9Ppm": 134 },
+    { "temperatureC": 26.8, "humidityPct": 65, "pressureHpa": 1015.4, "lightLux": 482, "mq9Ppm": 135 }
+  ]
+}
