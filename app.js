@@ -2,7 +2,7 @@ const dashboardConfig = window.dashboardConfig || {};
 
 const ACCESS_PASSWORD = "MangCamBien123";
 const AUTH_STORAGE_KEY = "air_monitor_web_auth";
-const COMMAND_UI_HOLD_MS = 6000;
+const COMMAND_UI_HOLD_MS = 2000;
 
 const appState = {
   latest: null,
@@ -11,7 +11,8 @@ const appState = {
   commandBusy: false,
   commandMessage: "Bấm để điều khiển quạt và sưởi từ web",
   refreshTimerId: null,
-  pendingControl: null
+  pendingControl: null,
+  pendingControlTimerId: null
 };
 
 const metricColors = {
@@ -391,6 +392,10 @@ function renderControlButtons(device, mode) {
 
 function clearPendingControl() {
   appState.pendingControl = null;
+  if (appState.pendingControlTimerId !== null) {
+    window.clearTimeout(appState.pendingControlTimerId);
+    appState.pendingControlTimerId = null;
+  }
 }
 
 function syncPendingControlWithLatest(latest) {
@@ -399,16 +404,27 @@ function syncPendingControlWithLatest(latest) {
   }
 
   const pending = appState.pendingControl;
-  const latestFanMode = sanitizeMode(latest?.fanMode);
-  const latestHeaterMode = sanitizeMode(latest?.heaterMode);
-  const latestSeq = Number(latest?.commandSeq || 0);
-  const commandMatched = latestFanMode === pending.fanMode && latestHeaterMode === pending.heaterMode;
-  const seqMatched = latestSeq >= pending.seq && latestSeq !== 0;
-  const expired = Date.now() - pending.startedAt > COMMAND_UI_HOLD_MS;
+  const expired = Date.now() >= pending.expiresAt;
 
-  if (commandMatched || seqMatched || expired) {
+  if (expired) {
     clearPendingControl();
   }
+}
+
+function holdPendingControlForUi() {
+  if (!appState.pendingControl) {
+    return;
+  }
+
+  if (appState.pendingControlTimerId !== null) {
+    window.clearTimeout(appState.pendingControlTimerId);
+  }
+
+  const waitMs = Math.max(0, appState.pendingControl.expiresAt - Date.now());
+  appState.pendingControlTimerId = window.setTimeout(() => {
+    clearPendingControl();
+    renderControls(appState.latest);
+  }, waitMs);
 }
 
 function renderControls(latest) {
@@ -489,8 +505,10 @@ function sendCommand(nextFanMode, nextHeaterMode) {
     fanMode: payload.fanMode,
     heaterMode: payload.heaterMode,
     seq: payload.seq,
-    startedAt: Date.now()
+    startedAt: Date.now(),
+    expiresAt: Date.now() + COMMAND_UI_HOLD_MS
   };
+  holdPendingControlForUi();
 
   if (appState.latest) {
     appState.latest.fanMode = payload.fanMode;
