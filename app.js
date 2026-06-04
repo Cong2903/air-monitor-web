@@ -149,7 +149,6 @@ function buildAreaPath(points, baselineY) {
 
 function formatTimeLabel(timestampMs) {
   return new Date(timestampMs).toLocaleTimeString("vi-VN", {
-    hour: "2-digit",
     minute: "2-digit",
     second: "2-digit"
   });
@@ -183,8 +182,8 @@ function buildChartSvg(series, color) {
   }
 
   const width = 320;
-  const height = 112;
-  const padding = { top: 8, right: 8, bottom: 24, left: 38 };
+  const height = 118;
+  const padding = { top: 10, right: 10, bottom: 28, left: 42 };
   const innerWidth = width - padding.left - padding.right;
   const innerHeight = height - padding.top - padding.bottom;
 
@@ -207,11 +206,11 @@ function buildChartSvg(series, color) {
   const yTicks = [adjustedMax, adjustedMin + adjustedRange / 2, adjustedMin];
   const xTickIndices = Array.from(new Set([
     0,
-    Math.floor((series.length - 1) / 3),
-    Math.floor(((series.length - 1) * 2) / 3),
+    Math.floor((series.length - 1) / 2),
     series.length - 1
   ])).sort((left, right) => left - right);
 
+  const backdrop = `<rect class="chart-backdrop" x="${padding.left}" y="${padding.top}" width="${innerWidth}" height="${innerHeight}" rx="10"></rect>`;
   const gridLines = yTicks.map((tickValue) => {
     const y = padding.top + innerHeight - ((tickValue - adjustedMin) / adjustedRange) * innerHeight;
     return `<line class="chart-grid-line" x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}"></line>
@@ -227,6 +226,7 @@ function buildChartSvg(series, color) {
 
   return `
     <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
+      ${backdrop}
       ${gridLines}
       <line class="chart-axis-line" x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}"></line>
       <path class="chart-area" d="${areaPath}" style="fill:${hexToRgba(color, 0.16)}"></path>
