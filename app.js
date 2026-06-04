@@ -2,7 +2,7 @@ const dashboardConfig = window.dashboardConfig || {};
 const appState = {
   latest: null,
   history: [],
-  lastSyncText: "Chua dong bo cloud"
+  lastSyncText: "Chưa đồng bộ dữ liệu"
 };
 
 const metricColors = {
@@ -18,6 +18,32 @@ function setText(id, value) {
   if (element) {
     element.textContent = value;
   }
+}
+
+function onOffText(value) {
+  return value ? "BẬT" : "TẮT";
+}
+
+function vietnameseAlertText(level, fallbackText) {
+  const map = {
+    stable: "ỔN ĐỊNH",
+    warning: "CẢNH BÁO",
+    danger: "NGUY HIỂM",
+    sensor_error: "LỖI CẢM BIẾN",
+    no_data: "MẤT KẾT NỐI"
+  };
+  return map[level] || fallbackText || "CHỜ DỮ LIỆU";
+}
+
+function vietnameseAlertSummary(level, fallbackText) {
+  const map = {
+    stable: "Hệ thống hoạt động bình thường",
+    warning: "Ngưỡng cảnh báo đang tăng",
+    danger: "Cần xử lý khẩn cấp ngay",
+    sensor_error: "Kiểm tra dây nối và cảm biến",
+    no_data: "Không nhận được dữ liệu mới từ Node 2"
+  };
+  return map[level] || fallbackText || "Đang chờ dữ liệu từ Node 1";
 }
 
 function formatNumber(value, digits = 1) {
@@ -50,7 +76,7 @@ function isPayloadFresh(latest) {
 
 function formatDateTime(timestamp) {
   if (!timestamp) {
-    return "Chua dong bo Firebase";
+    return "Chưa đồng bộ Firebase";
   }
 
   const date = new Date(timestamp);
@@ -58,7 +84,7 @@ function formatDateTime(timestamp) {
     return timestamp;
   }
 
-  return `Cap nhat luc ${date.toLocaleString("vi-VN")}`;
+  return `Cập nhật lúc ${date.toLocaleString("vi-VN")}`;
 }
 
 function setConnectionPill(level, text) {
@@ -129,9 +155,9 @@ function renderSensorChips(latest) {
   const fresh = isPayloadFresh(latest);
 
   const chips = [
-    { label: `BME680 ${fresh ? (latest.bme680Status || "ERROR") : "OFF"}`, good: fresh && latest.bme680Status === "OK" },
-    { label: `BH1750 ${fresh ? (latest.bh1750Status || "ERROR") : "OFF"}`, good: fresh && latest.bh1750Status === "OK" },
-    { label: `MQ9 ${fresh ? (latest.mq9Status || "ERROR") : "OFF"}`, good: fresh && latest.mq9Status === "OK" }
+    { label: `BME680 ${fresh ? (latest.bme680Status === "OK" ? "TỐT" : "LỖI") : "TẮT"}`, good: fresh && latest.bme680Status === "OK" },
+    { label: `BH1750 ${fresh ? (latest.bh1750Status === "OK" ? "TỐT" : "LỖI") : "TẮT"}`, good: fresh && latest.bh1750Status === "OK" },
+    { label: `MQ9 ${fresh ? (latest.mq9Status === "OK" ? "TỐT" : "LỖI") : "TẮT"}`, good: fresh && latest.mq9Status === "OK" }
   ];
 
   chipList.innerHTML = chips
@@ -143,8 +169,12 @@ function renderAlertBox(latest) {
   const alertBox = document.getElementById("alert-box");
   const fresh = isPayloadFresh(latest);
   const alertLevel = fresh ? (latest.alertLevel || "no_data") : "no_data";
-  const alertText = fresh ? (latest.alertText || "CHO DU LIEU") : "MAT KET NOI";
-  const alertSummary = fresh ? (latest.alertSummary || "Dang cho du lieu tu Node 1") : "Khong nhan duoc du lieu moi tu Node 2";
+  const alertText = fresh
+    ? vietnameseAlertText(alertLevel, latest.alertText)
+    : "MẤT KẾT NỐI";
+  const alertSummary = fresh
+    ? vietnameseAlertSummary(alertLevel, latest.alertSummary)
+    : "Không nhận được dữ liệu mới từ Node 2";
   const mq9Status = document.getElementById("mq9-health-text");
   const mq9Card = document.querySelector(".gas-card");
 
@@ -155,7 +185,7 @@ function renderAlertBox(latest) {
 
   setText("alert-title", alertText);
   setText("alert-summary", alertSummary);
-  setText("mq9-status-text", fresh ? (latest.mq9Status === "OK" ? "Du lieu MQ9 hop le" : "Dang cho/loi MQ9") : "Khong co du lieu moi");
+  setText("mq9-status-text", fresh ? (latest.mq9Status === "OK" ? "Dữ liệu MQ9 hợp lệ" : "Đang chờ hoặc lỗi MQ9") : "Không có dữ liệu mới");
 
   if (mq9Status) {
     mq9Status.textContent = alertText;
@@ -174,9 +204,9 @@ function renderAlertBox(latest) {
 
 function renderActuators(latest) {
   const fresh = isPayloadFresh(latest);
-  setText("fan-state", fresh && latest.fanOn ? "ON" : "OFF");
-  setText("heater-state", fresh && latest.heaterOn ? "ON" : "OFF");
-  setText("buzzer-state", fresh && latest.buzzerOn ? "ON" : "OFF");
+  setText("fan-state", onOffText(fresh && latest.fanOn));
+  setText("heater-state", onOffText(fresh && latest.heaterOn));
+  setText("buzzer-state", onOffText(fresh && latest.buzzerOn));
   setText("wifi-rssi", fresh && Number.isFinite(latest.wifiRssi) ? `${latest.wifiRssi} dBm` : "--");
 }
 
@@ -190,11 +220,11 @@ function renderMetrics(latest) {
 }
 
 function renderMeta(latest) {
-  setText("device-name", latest.deviceName || dashboardConfig.deviceName || "HE THONG GIAM SAT NODE 2");
-  setText("device-location", latest.location || dashboardConfig.locationLabel || "Ha Noi, VN");
+  setText("device-name", latest.deviceName || dashboardConfig.deviceName || "HỆ THỐNG GIÁM SÁT NODE 2");
+  setText("device-location", latest.location || dashboardConfig.locationLabel || "Hà Nội, VN");
   appState.lastSyncText = isPayloadFresh(latest)
     ? formatDateTime(latest.serverTimestampIso || latest.receivedAt)
-    : "Mat dong bo du lieu";
+    : "Mất đồng bộ dữ liệu";
   setText("last-sync", appState.lastSyncText);
 }
 
@@ -231,8 +261,8 @@ function renderDashboard(payload) {
   const fresh = isPayloadFresh(latest);
   const level = fresh ? (latest.alertLevel || "no_data") : "no_data";
   const connectionText = fresh
-    ? (payload.ok ? "Firebase dang dong bo" : "Firebase tam mat ket noi")
-    : "Mat ket noi Node 2";
+    ? (payload.ok ? "Firebase đang đồng bộ" : "Firebase tạm mất kết nối")
+    : "Mất kết nối Node 2";
   setConnectionPill(level, connectionText);
 }
 
@@ -243,13 +273,13 @@ function showSetupState(message) {
 
 function fetchDashboardData() {
   if (!dashboardConfig.dataUrl) {
-    showSetupState("Chua cau hinh file JSON");
+    showSetupState("Chưa cấu hình tệp dữ liệu");
     return;
   }
   fetch(`${dashboardConfig.dataUrl}?t=${Date.now()}`, { cache: "no-store" })
     .then((response) => {
       if (!response.ok) {
-        throw new Error("Khong doc duoc file JSON");
+        throw new Error("Không đọc được dữ liệu JSON");
       }
       return response.json();
     })
@@ -257,11 +287,11 @@ function fetchDashboardData() {
       if (payload && payload.ok !== false) {
         renderDashboard(payload);
       } else {
-        showSetupState("File JSON khong hop le");
+        showSetupState("Tệp JSON không hợp lệ");
       }
     })
     .catch(() => {
-      showSetupState("Khong tai duoc du lieu JSON");
+      showSetupState("Không tải được dữ liệu JSON");
     });
 }
 
