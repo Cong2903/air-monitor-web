@@ -24,6 +24,30 @@ function formatNumber(value, digits = 1) {
   return Number.isFinite(value) ? value.toFixed(digits) : "--";
 }
 
+function getTimestampMs(timestamp) {
+  if (!timestamp) {
+    return NaN;
+  }
+
+  const parsed = new Date(timestamp).getTime();
+  return Number.isNaN(parsed) ? NaN : parsed;
+}
+
+function isPayloadFresh(latest) {
+  const staleAfterMs = Number(dashboardConfig.staleAfterMs || 8000);
+  const timestampMs = getTimestampMs(latest.serverTimestampIso || latest.receivedAt);
+
+  if (!Number.isFinite(timestampMs)) {
+    return false;
+  }
+
+  if (Date.now() - timestampMs > staleAfterMs) {
+    return false;
+  }
+
+  return latest.packetFresh !== false;
+}
+
 function formatDateTime(timestamp) {
   if (!timestamp) {
     return "Chua dong bo Firebase";
@@ -102,10 +126,12 @@ function renderSensorChips(latest) {
     return;
   }
 
+  const fresh = isPayloadFresh(latest);
+
   const chips = [
-    { label: `BME680 ${latest.bme680Status || "ERROR"}`, good: latest.bme680Status === "OK" },
-    { label: `BH1750 ${latest.bh1750Status || "ERROR"}`, good: latest.bh1750Status === "OK" },
-    { label: `MQ9 ${latest.mq9Status || "ERROR"}`, good: latest.mq9Status === "OK" }
+    { label: `BME680 ${fresh ? (latest.bme680Status || "ERROR") : "OFF"}`, good: fresh && latest.bme680Status === "OK" },
+    { label: `BH1750 ${fresh ? (latest.bh1750Status || "ERROR") : "OFF"}`, good: fresh && latest.bh1750Status === "OK" },
+    { label: `MQ9 ${fresh ? (latest.mq9Status || "ERROR") : "OFF"}`, good: fresh && latest.mq9Status === "OK" }
   ];
 
   chipList.innerHTML = chips
@@ -115,9 +141,10 @@ function renderSensorChips(latest) {
 
 function renderAlertBox(latest) {
   const alertBox = document.getElementById("alert-box");
-  const alertLevel = latest.alertLevel || "no_data";
-  const alertText = latest.alertText || "CHO DU LIEU";
-  const alertSummary = latest.alertSummary || "Dang cho du lieu tu Node 1";
+  const fresh = isPayloadFresh(latest);
+  const alertLevel = fresh ? (latest.alertLevel || "no_data") : "no_data";
+  const alertText = fresh ? (latest.alertText || "CHO DU LIEU") : "MAT KET NOI";
+  const alertSummary = fresh ? (latest.alertSummary || "Dang cho du lieu tu Node 1") : "Khong nhan duoc du lieu moi tu Node 2";
   const mq9Status = document.getElementById("mq9-health-text");
   const mq9Card = document.querySelector(".gas-card");
 
@@ -128,7 +155,7 @@ function renderAlertBox(latest) {
 
   setText("alert-title", alertText);
   setText("alert-summary", alertSummary);
-  setText("mq9-status-text", latest.mq9Status === "OK" ? "Du lieu MQ9 hop le" : "Dang cho/loi MQ9");
+  setText("mq9-status-text", fresh ? (latest.mq9Status === "OK" ? "Du lieu MQ9 hop le" : "Dang cho/loi MQ9") : "Khong co du lieu moi");
 
   if (mq9Status) {
     mq9Status.textContent = alertText;
@@ -146,24 +173,28 @@ function renderAlertBox(latest) {
 }
 
 function renderActuators(latest) {
-  setText("fan-state", latest.fanOn ? "ON" : "OFF");
-  setText("heater-state", latest.heaterOn ? "ON" : "OFF");
-  setText("buzzer-state", latest.buzzerOn ? "ON" : "OFF");
-  setText("wifi-rssi", Number.isFinite(latest.wifiRssi) ? `${latest.wifiRssi} dBm` : "--");
+  const fresh = isPayloadFresh(latest);
+  setText("fan-state", fresh && latest.fanOn ? "ON" : "OFF");
+  setText("heater-state", fresh && latest.heaterOn ? "ON" : "OFF");
+  setText("buzzer-state", fresh && latest.buzzerOn ? "ON" : "OFF");
+  setText("wifi-rssi", fresh && Number.isFinite(latest.wifiRssi) ? `${latest.wifiRssi} dBm` : "--");
 }
 
 function renderMetrics(latest) {
-  setText("temperature-value", formatNumber(Number(latest.temperatureC), 1));
-  setText("humidity-value", formatNumber(Number(latest.humidityPct), 0));
-  setText("light-value", formatNumber(Number(latest.lightLux), 0));
-  setText("pressure-value", formatNumber(Number(latest.pressureHpa), 1));
-  setText("mq9-value", formatNumber(Number(latest.mq9Ppm), 0));
+  const fresh = isPayloadFresh(latest);
+  setText("temperature-value", fresh ? formatNumber(Number(latest.temperatureC), 1) : "--");
+  setText("humidity-value", fresh ? formatNumber(Number(latest.humidityPct), 0) : "--");
+  setText("light-value", fresh ? formatNumber(Number(latest.lightLux), 0) : "--");
+  setText("pressure-value", fresh ? formatNumber(Number(latest.pressureHpa), 1) : "--");
+  setText("mq9-value", fresh ? formatNumber(Number(latest.mq9Ppm), 0) : "--");
 }
 
 function renderMeta(latest) {
   setText("device-name", latest.deviceName || dashboardConfig.deviceName || "HE THONG GIAM SAT NODE 2");
   setText("device-location", latest.location || dashboardConfig.locationLabel || "Ha Noi, VN");
-  appState.lastSyncText = formatDateTime(latest.serverTimestampIso || latest.receivedAt);
+  appState.lastSyncText = isPayloadFresh(latest)
+    ? formatDateTime(latest.serverTimestampIso || latest.receivedAt)
+    : "Mat dong bo du lieu";
   setText("last-sync", appState.lastSyncText);
 }
 
@@ -197,8 +228,11 @@ function renderDashboard(payload) {
   renderSparkline("pressure-sparkline", "pressureHpa", metricColors.pressure);
   renderSparkline("mq9-sparkline", "mq9Ppm", metricColors.mq9);
 
-  const level = latest.alertLevel || "no_data";
-  const connectionText = payload.ok ? "Firebase dang dong bo" : "Firebase tam mat ket noi";
+  const fresh = isPayloadFresh(latest);
+  const level = fresh ? (latest.alertLevel || "no_data") : "no_data";
+  const connectionText = fresh
+    ? (payload.ok ? "Firebase dang dong bo" : "Firebase tam mat ket noi")
+    : "Mat ket noi Node 2";
   setConnectionPill(level, connectionText);
 }
 
