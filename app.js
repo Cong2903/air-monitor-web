@@ -3,10 +3,14 @@ const dashboardConfig = window.dashboardConfig || {};
 const ACCESS_PASSWORD = "MangCamBien123";
 const AUTH_STORAGE_KEY = "air_monitor_web_auth";
 const COMMAND_UI_HOLD_MS = 2000;
+const CHART_HISTORY_LIMIT = 36;
+const METRIC_KEYS = ["temperatureC", "humidityPct", "lightLux", "pressureHpa", "mq9Ppm"];
 
 const appState = {
   latest: null,
   history: [],
+  chartHistory: [],
+  lastChartSampleKey: "",
   lastSyncText: "Chưa đồng bộ dữ liệu",
   commandBusy: false,
   commandMessage: "Bấm để điều khiển quạt và sưởi từ web",
@@ -190,26 +194,106 @@ function formatTimeLabel(timestampMs) {
   });
 }
 
+function buildChartSampleKey(latest) {
+  return [
+    latest?.packetId ?? "",
+    latest?.serverTimestampIso || latest?.receivedAt || "",
+    latest?.bme680Status || "",
+    latest?.bh1750Status || "",
+    latest?.mq9Status || ""
+  ].join("|");
+}
+
+function pruneChartHistory() {
+  if (appState.chartHistory.length > CHART_HISTORY_LIMIT) {
+    appState.chartHistory = appState.chartHistory.slice(-CHART_HISTORY_LIMIT);
+  }
+}
+
+function appendChartEntry(entry) {
+  appState.chartHistory.push(entry);
+  pruneChartHistory();
+}
+
+function seedChartHistory(latest, rawHistory) {
+  if (appState.chartHistory.length || !Array.isArray(rawHistory) || !rawHistory.length) {
+    return;
+  }
+
+  const latestTimestamp = getTimestampMs(latest?.serverTimestampIso || latest?.receivedAt) || Date.now();
+  const sampleIntervalMs = Number(dashboardConfig.sampleIntervalMs || 1000);
+
+  rawHistory.forEach((entry, index, array) => {
+    const timestamp = latestTimestamp - (array.length - 1 - index) * sampleIntervalMs;
+    const seededEntry = { timestamp };
+    let hasAnyValue = false;
+
+    METRIC_KEYS.forEach((key) => {
+      const numericValue = Number(entry?.[key]);
+      seededEntry[key] = Number.isFinite(numericValue) ? numericValue : null;
+      hasAnyValue = hasAnyValue || Number.isFinite(numericValue);
+    });
+
+    if (hasAnyValue) {
+      appendChartEntry(seededEntry);
+    }
+  });
+}
+
+function recordChartGap(timestampMs = Date.now()) {
+  const timestamp = Number.isFinite(timestampMs) ? timestampMs : Date.now();
+  const lastEntry = appState.chartHistory[appState.chartHistory.length - 1];
+  const minGapSpacing = Math.max(250, Number(dashboardConfig.refreshMs || 400));
+
+  if (lastEntry && lastEntry.isGap && timestamp - lastEntry.timestamp < minGapSpacing) {
+    return;
+  }
+
+  const gapEntry = { timestamp, isGap: true };
+  METRIC_KEYS.forEach((key) => {
+    gapEntry[key] = null;
+  });
+  appendChartEntry(gapEntry);
+}
+
+function recordChartSample(latest, rawHistory) {
+  seedChartHistory(latest, rawHistory);
+
+  if (!latest) {
+    recordChartGap(Date.now());
+    return;
+  }
+
+  if (!isPayloadFresh(latest)) {
+    recordChartGap(Date.now());
+    return;
+  }
+
+  const sampleKey = buildChartSampleKey(latest);
+  if (sampleKey === appState.lastChartSampleKey) {
+    return;
+  }
+
+  const timestamp = getTimestampMs(latest.serverTimestampIso || latest.receivedAt) || Date.now();
+  const liveEntry = { timestamp };
+
+  METRIC_KEYS.forEach((key) => {
+    const numericValue = Number(latest[key]);
+    liveEntry[key] = Number.isFinite(numericValue) ? numericValue : null;
+  });
+
+  appendChartEntry(liveEntry);
+  appState.lastChartSampleKey = sampleKey;
+}
+
 function historySeries(key) {
-  const rawHistory = appState.history.length ? appState.history : (appState.latest ? [appState.latest] : []);
-  const latestTimestamp = getTimestampMs(appState.latest?.serverTimestampIso || appState.latest?.receivedAt) || Date.now();
-  const sampleIntervalMs = Number(dashboardConfig.sampleIntervalMs || 2000);
-
-  return rawHistory
-    .map((entry, index, array) => {
-      const value = Number(entry[key]);
-      if (!Number.isFinite(value)) {
-        return null;
-      }
-
-      const explicitTimestamp = getTimestampMs(entry.serverTimestampIso || entry.receivedAt || entry.timestampIso);
-      const timestamp = Number.isFinite(explicitTimestamp)
-        ? explicitTimestamp
-        : latestTimestamp - (array.length - 1 - index) * sampleIntervalMs;
-
-      return { value, timestamp };
-    })
-    .filter(Boolean);
+  return appState.chartHistory.map((entry) => {
+    const numericValue = Number(entry[key]);
+    return {
+      timestamp: entry.timestamp,
+      value: Number.isFinite(numericValue) ? numericValue : null
+    };
+  });
 }
 
 function buildChartSvg(series, color, options = {}) {
@@ -223,7 +307,17 @@ function buildChartSvg(series, color, options = {}) {
   const innerWidth = width - padding.left - padding.right;
   const innerHeight = height - padding.top - padding.bottom;
 
-  const values = series.map((point) => point.value);
+  const validSeries = series.filter((point) => Number.isFinite(point.value));
+  if (!validSeries.length) {
+    return `
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
+        <rect class="chart-backdrop" x="${padding.left}" y="${padding.top}" width="${innerWidth}" height="${innerHeight}" rx="10"></rect>
+        <line class="chart-axis-line" x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}"></line>
+      </svg>
+    `;
+  }
+
+  const values = validSeries.map((point) => point.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || Math.max(Math.abs(max) * 0.05, 1);
@@ -233,12 +327,29 @@ function buildChartSvg(series, color, options = {}) {
 
   const points = series.map((point, index) => {
     const x = padding.left + (series.length === 1 ? innerWidth / 2 : (index / (series.length - 1)) * innerWidth);
+    if (!Number.isFinite(point.value)) {
+      return { x, y: null, timestamp: point.timestamp };
+    }
     const y = padding.top + innerHeight - ((point.value - adjustedMin) / adjustedRange) * innerHeight;
-    return { x, y };
+    return { x, y, timestamp: point.timestamp };
   });
 
-  const linePath = buildSmoothLinePath(points);
-  const areaPath = buildAreaPath(points, padding.top + innerHeight);
+  const segments = [];
+  let currentSegment = [];
+  points.forEach((point) => {
+    if (Number.isFinite(point.y)) {
+      currentSegment.push(point);
+      return;
+    }
+    if (currentSegment.length) {
+      segments.push(currentSegment);
+      currentSegment = [];
+    }
+  });
+  if (currentSegment.length) {
+    segments.push(currentSegment);
+  }
+
   const yTicks = [adjustedMax, adjustedMin + adjustedRange / 2, adjustedMin];
   const xTickIndices = Array.from(new Set([
     0,
@@ -260,13 +371,28 @@ function buildChartSvg(series, color, options = {}) {
       <text class="chart-time-text" x="${x}" y="${height - 6}" text-anchor="middle">${formatTimeLabel(tick.timestamp)}</text>`;
   }).join("");
 
+  const areas = segments.map((segment) => {
+    if (segment.length === 1) {
+      return "";
+    }
+    return `<path class="chart-area" d="${buildAreaPath(segment, padding.top + innerHeight)}" style="fill:${hexToRgba(color, 0.16)}"></path>`;
+  }).join("");
+
+  const lines = segments.map((segment) => {
+    if (segment.length === 1) {
+      const point = segment[0];
+      return `<circle cx="${point.x}" cy="${point.y}" r="3.5" fill="${color}"></circle>`;
+    }
+    return `<path class="chart-line" d="${buildSmoothLinePath(segment)}" style="stroke:${color}"></path>`;
+  }).join("");
+
   return `
     <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
       ${backdrop}
       ${gridLines}
       <line class="chart-axis-line" x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}"></line>
-      <path class="chart-area" d="${areaPath}" style="fill:${hexToRgba(color, 0.16)}"></path>
-      <path class="chart-line" d="${linePath}" style="stroke:${color}"></path>
+      ${areas}
+      ${lines}
       ${xTicks}
     </svg>
   `;
@@ -444,20 +570,7 @@ function renderControls(latest) {
   setText("control-note", appState.commandMessage);
 }
 
-function renderDashboard(payload) {
-  const latest = payload.latest || payload;
-  const history = Array.isArray(payload.history) ? payload.history : [];
-
-  appState.latest = latest;
-  appState.history = history.length ? history : [latest];
-
-  renderMetrics(latest);
-  renderAlertBox(latest);
-  renderActuators(latest);
-  renderSensorChips(latest);
-  renderMeta(latest);
-  renderControls(latest);
-
+function renderAllCharts() {
   renderChart("temperature-sparkline", "temperatureC", metricColors.temperature);
   renderChart("humidity-sparkline", "humidityPct", metricColors.humidity);
   renderChart("light-sparkline", "lightLux", metricColors.light);
@@ -466,6 +579,23 @@ function renderDashboard(payload) {
     height: 136,
     padding: { top: 12, right: 16, bottom: 30, left: 46 }
   });
+}
+
+function renderDashboard(payload) {
+  const latest = payload.latest || payload;
+  const history = Array.isArray(payload.history) ? payload.history : [];
+
+  appState.latest = latest;
+  appState.history = history.length ? history : [latest];
+  recordChartSample(latest, history);
+
+  renderMetrics(latest);
+  renderAlertBox(latest);
+  renderActuators(latest);
+  renderSensorChips(latest);
+  renderMeta(latest);
+  renderControls(latest);
+  renderAllCharts();
 
   const fresh = isPayloadFresh(latest);
   const level = fresh ? (latest.alertLevel || "no_data") : "no_data";
@@ -476,9 +606,20 @@ function renderDashboard(payload) {
 }
 
 function showSetupState(message) {
+  recordChartGap(Date.now());
   setConnectionPill("no_data", message);
   setText("last-sync", message);
   setText("control-note", message);
+  if (appState.latest) {
+    appState.latest.packetFresh = false;
+    renderMetrics(appState.latest);
+    renderAlertBox(appState.latest);
+    renderActuators(appState.latest);
+    renderSensorChips(appState.latest);
+    renderMeta(appState.latest);
+    renderControls(appState.latest);
+    renderAllCharts();
+  }
 }
 
 function buildCommandPayload(nextFanMode, nextHeaterMode) {
