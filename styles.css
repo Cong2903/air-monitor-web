@@ -228,8 +228,8 @@ body {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 16px;
   flex: 1;
   min-height: 0;
 }
@@ -237,8 +237,8 @@ body {
 .metrics-panel {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: minmax(0, 1fr);
-  gap: 14px;
+  grid-auto-rows: minmax(184px, 1fr);
+  gap: 12px;
   min-height: 0;
 }
 
@@ -246,8 +246,8 @@ body {
   position: relative;
   min-height: 0;
   height: 100%;
-  padding: 14px 16px;
-  border-radius: 24px;
+  padding: 14px 14px 12px;
+  border-radius: 22px;
   overflow: hidden;
 }
 
@@ -270,6 +270,10 @@ body {
 .side-card h2 {
   margin: 0;
   font-size: 18px;
+}
+
+.metric-head-plain {
+  align-items: flex-start;
 }
 
 .metric-head p,
@@ -317,7 +321,7 @@ body {
 .metric-value {
   position: relative;
   z-index: 1;
-  margin: 14px 0 10px;
+  margin: 12px 0 10px;
   display: flex;
   align-items: baseline;
   gap: 8px;
@@ -338,8 +342,8 @@ body {
 .sparkline {
   position: relative;
   z-index: 1;
-  height: clamp(102px, 13vh, 126px);
-  margin-top: 10px;
+  height: 92px;
+  margin-top: 8px;
 }
 
 .sparkline svg {
@@ -390,40 +394,16 @@ body {
   stroke-linejoin: round;
 }
 
-.gas-card {
-  grid-column: span 2;
-  display: grid;
-  grid-template-columns: minmax(210px, 250px) minmax(0, 1fr);
-  align-items: center;
-  gap: 12px 18px;
-}
-
-.gas-card .metric-value {
-  margin-bottom: 0;
-}
-
-.gas-summary {
-  position: relative;
-  z-index: 1;
-  align-self: start;
-}
-
-.gas-sparkline {
-  align-self: stretch;
-  height: clamp(126px, 15vh, 150px);
-  margin-top: 0;
-}
-
 .gas-card .chart-backdrop {
   fill: rgba(244, 249, 252, 0.98);
 }
 
-.mq9-sensor-warning .gas-sparkline .chart-backdrop {
+.mq9-sensor-warning .gas-card .chart-backdrop {
   fill: rgba(255, 245, 228, 0.96);
 }
 
-.mq9-sensor-danger .gas-sparkline .chart-backdrop,
-.mq9-no-data .gas-sparkline .chart-backdrop {
+.mq9-sensor-danger .gas-card .chart-backdrop,
+.mq9-no-data .gas-card .chart-backdrop {
   fill: rgba(246, 247, 250, 0.96);
 }
 
@@ -443,33 +423,37 @@ body {
 }
 
 .sidebar-panel {
-  display: grid;
-  grid-template-rows: minmax(0, 0.88fr) minmax(0, 1.12fr);
-  gap: 14px;
+  display: block;
   min-height: 0;
 }
 
 .side-card {
-  border-radius: 24px;
-  padding: 18px 20px;
-  min-height: 0;
+  border-radius: 22px;
+  padding: 16px 18px;
+  min-height: 100%;
 }
 
 .clock-value {
-  margin-top: 18px;
-  font-size: clamp(34px, 2.6vw, 48px);
+  margin-top: 26px;
+  font-size: clamp(34px, 2.7vw, 50px);
   font-weight: 800;
   line-height: 1;
 }
 
 .clock-date {
-  margin-top: 12px;
+  margin-top: 14px;
+  font-size: 16px;
+}
+
+.clock-card .clock-subtext {
+  margin-top: 26px;
+  font-size: 15px;
 }
 
 .alert-box {
   margin-top: 14px;
-  padding: 16px;
-  border-radius: 20px;
+  padding: 14px 16px;
+  border-radius: 18px;
   border: 2px solid var(--line);
   background: var(--paper-strong);
   display: flex;
@@ -532,9 +516,9 @@ body {
 }
 
 .control-group {
-  margin-top: 12px;
-  padding: 12px 14px;
-  border-radius: 18px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.66);
   border: 1px solid rgba(103, 120, 143, 0.12);
 }
@@ -574,15 +558,15 @@ body {
 .control-buttons {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
 .control-button {
   border: 0;
-  border-radius: 12px;
-  padding: 10px 8px;
+  border-radius: 10px;
+  padding: 8px 6px;
   font: inherit;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #4a5667;
   background: #eef3f8;
@@ -607,8 +591,8 @@ body {
 }
 
 .control-note {
-  margin-top: 10px;
-  font-size: 12px;
+  margin-top: 8px;
+  font-size: 11px;
 }
 
 .chips-block {
@@ -645,7 +629,7 @@ body {
 }
 
 .bottom-panel {
-  margin-top: 14px;
+  margin-top: 12px;
   border-radius: 22px;
   padding: 12px 18px;
 }
@@ -721,8 +705,7 @@ body {
   }
 
   .sidebar-panel {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: none;
+    display: block;
   }
 }
 
@@ -736,15 +719,9 @@ body {
     padding: 12px;
   }
 
-  .metrics-panel,
-  .sidebar-panel {
+  .metrics-panel {
     grid-template-columns: 1fr;
     grid-auto-rows: auto;
-  }
-
-  .gas-card {
-    grid-column: span 1;
-    grid-template-columns: 1fr;
   }
 
   .topbar {
