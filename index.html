@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trạng thái môi trường</title>
-    <link rel="stylesheet" href="./styles.css?v=20260604j">
-    <script src="./config.js?v=20260604j"></script>
-    <script src="./app.js?v=20260604j" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=20260605a">
+    <script src="./config.js?v=20260605a"></script>
+    <script src="./app.js?v=20260605a" defer></script>
   </head>
   <body>
     <div class="page-shell">
@@ -71,16 +71,17 @@
           </article>
 
           <article class="metric-card gas-card">
-            <div class="metric-head">
-              <span class="metric-icon" aria-hidden="true">&#9729;</span>
-              <div>
-                <h2>Cảm biến MQ9 (Gas/CO)</h2>
-                <p id="mq9-status-text">Đang chờ dữ liệu</p>
+            <div class="gas-summary">
+              <div class="metric-head">
+                <span class="metric-icon" aria-hidden="true">&#9729;</span>
+                <div>
+                  <h2>Cảm biến MQ9 (Gas/CO)</h2>
+                  <p id="mq9-status-text">Đang chờ dữ liệu</p>
+                </div>
               </div>
+              <div class="metric-value"><span id="mq9-value">--</span><small>ppm</small></div>
             </div>
-            <div class="metric-value"><span id="mq9-value">--</span><small>ppm</small></div>
-            <div class="metric-state" id="mq9-health-text">Đang chờ dữ liệu</div>
-            <div class="sparkline" id="mq9-sparkline"></div>
+            <div class="sparkline gas-sparkline" id="mq9-sparkline"></div>
           </article>
         </section>
 
@@ -119,6 +120,37 @@
                 <span>RSSI</span>
                 <strong id="wifi-rssi">--</strong>
               </div>
+            </div>
+
+            <div class="controls-block">
+              <p>Điều khiển từ web</p>
+              <div class="control-group">
+                <div class="control-head">
+                  <div class="control-title">
+                    <span class="control-icon" aria-hidden="true">&#127744;</span>
+                    <div>
+                      <strong>Quạt</strong>
+                      <small id="fan-mode-text">Đang tự động</small>
+                    </div>
+                  </div>
+                  <div class="control-buttons" id="fan-controls"></div>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <div class="control-head">
+                  <div class="control-title">
+                    <span class="control-icon" aria-hidden="true">&#128293;</span>
+                    <div>
+                      <strong>Máy sưởi</strong>
+                      <small id="heater-mode-text">Đang tự động</small>
+                    </div>
+                  </div>
+                  <div class="control-buttons" id="heater-controls"></div>
+                </div>
+              </div>
+
+              <p class="control-note" id="control-note">Bấm để điều khiển quạt và sưởi từ web</p>
             </div>
 
             <div class="chips-block">

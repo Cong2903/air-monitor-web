@@ -121,7 +121,7 @@ body {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 20px;
   flex: 1;
   min-height: 0;
@@ -169,7 +169,9 @@ body {
 .alert-summary,
 .clock-date,
 .clock-subtext,
-.chips-block p {
+.chips-block p,
+.controls-block p,
+.control-note {
   margin: 4px 0 0;
   color: var(--muted);
 }
@@ -198,24 +200,12 @@ body {
 .pressure-card .sparkline .chart-line { color: var(--silver); }
 .gas-card .metric-icon,
 .gas-card .sparkline .chart-line { color: #5e91a8; }
-.gas-card { grid-column: span 2; }
-.gas-card .metric-value { margin-bottom: 8px; }
-.gas-card .metric-state {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--green);
-}
-.mq9-sensor-warning .metric-state { color: var(--warn); }
-.mq9-sensor-danger .metric-state { color: var(--red); }
-.mq9-card .metric-icon,
-.mq9-card .sparkline .chart-line { color: var(--red); }
 
 .temp-card .metric-icon { background: linear-gradient(135deg, #f5a34d, #e86b1d); }
 .hum-card .metric-icon { background: linear-gradient(135deg, #65b8ff, #2674d2); }
 .light-card .metric-icon { background: linear-gradient(135deg, #ffe278, #d5a200); }
 .pressure-card .metric-icon { background: linear-gradient(135deg, #bdc5d0, #7d8a98); }
 .gas-card .metric-icon { background: linear-gradient(135deg, #6eb1cf, #2f6f89); }
-.gas-card .sparkline .chart-line { color: #4c88a3; }
 
 .metric-value {
   position: relative;
@@ -252,8 +242,8 @@ body {
 }
 
 .sparkline .chart-backdrop {
-  fill: rgba(245, 248, 252, 0.88);
-  stroke: rgba(120, 136, 158, 0.12);
+  fill: rgba(245, 248, 252, 0.9);
+  stroke: rgba(120, 136, 158, 0.14);
   stroke-width: 1;
 }
 
@@ -288,9 +278,46 @@ body {
   font-size: 11px;
   font-weight: 700;
   paint-order: stroke;
-  stroke: rgba(255, 255, 255, 0.9);
+  stroke: rgba(255, 255, 255, 0.92);
   stroke-width: 2px;
   stroke-linejoin: round;
+}
+
+.gas-card {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: minmax(210px, 250px) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px 18px;
+}
+
+.gas-card .metric-value {
+  margin-bottom: 0;
+}
+
+.gas-summary {
+  position: relative;
+  z-index: 1;
+  align-self: start;
+}
+
+.gas-sparkline {
+  align-self: stretch;
+  height: clamp(126px, 15vh, 150px);
+  margin-top: 0;
+}
+
+.gas-card .chart-backdrop {
+  fill: rgba(244, 249, 252, 0.98);
+}
+
+.mq9-sensor-warning .gas-sparkline .chart-backdrop {
+  fill: rgba(255, 245, 228, 0.96);
+}
+
+.mq9-sensor-danger .gas-sparkline .chart-backdrop,
+.mq9-no-data .gas-sparkline .chart-backdrop {
+  fill: rgba(246, 247, 250, 0.96);
 }
 
 @keyframes pillPulse {
@@ -308,13 +335,6 @@ body {
   }
 }
 
-.metric-state {
-  position: relative;
-  z-index: 1;
-  font-size: 16px;
-  font-weight: 700;
-}
-
 .sidebar-panel {
   display: grid;
   grid-template-rows: minmax(0, 0.88fr) minmax(0, 1.12fr);
@@ -328,19 +348,11 @@ body {
   min-height: 0;
 }
 
-.clock-card {
-  min-height: 0;
-}
-
 .clock-value {
   margin-top: 10px;
   font-size: clamp(34px, 2.6vw, 48px);
   font-weight: 800;
   line-height: 1;
-}
-
-.alert-card {
-  min-height: 0;
 }
 
 .alert-box {
@@ -403,6 +415,91 @@ body {
   border-bottom: 1px solid var(--line);
 }
 
+.controls-block {
+  margin-top: 14px;
+  padding-top: 2px;
+}
+
+.control-group {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(103, 120, 143, 0.12);
+}
+
+.control-head {
+  display: grid;
+  gap: 10px;
+}
+
+.control-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.control-title strong {
+  display: block;
+}
+
+.control-title small {
+  color: var(--muted);
+}
+
+.control-icon {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #67b4ff, #2275d7);
+  color: #fff;
+  font-size: 19px;
+  box-shadow: 0 8px 16px rgba(34, 117, 215, 0.18);
+}
+
+.control-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.control-button {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4a5667;
+  background: #eef3f8;
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.control-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #e6eef9;
+}
+
+.control-button.active {
+  color: #fff;
+  background: linear-gradient(135deg, #4b9df0, #2569c9);
+  box-shadow: 0 10px 18px rgba(37, 105, 201, 0.24);
+}
+
+.control-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.control-note {
+  margin-top: 10px;
+  font-size: 12px;
+}
+
 .chips-block {
   margin-top: 14px;
 }
@@ -440,6 +537,14 @@ body {
   margin-top: 14px;
   border-radius: 22px;
   padding: 12px 18px;
+}
+
+.panel-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  color: var(--muted);
+  font-weight: 600;
 }
 
 @media (min-width: 1181px) and (max-height: 980px) {
@@ -491,14 +596,6 @@ body {
   }
 }
 
-.panel-line {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 18px;
-  color: var(--muted);
-  font-weight: 600;
-}
-
 @media (max-width: 1180px) {
   body {
     overflow: auto;
@@ -536,6 +633,7 @@ body {
 
   .gas-card {
     grid-column: span 1;
+    grid-template-columns: 1fr;
   }
 
   .topbar {
@@ -556,6 +654,10 @@ body {
 
   .clock-value {
     font-size: 48px;
+  }
+
+  .control-buttons {
+    grid-template-columns: 1fr;
   }
 
   .bottom-panel {

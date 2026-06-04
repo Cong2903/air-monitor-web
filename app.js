@@ -3,7 +3,9 @@ const dashboardConfig = window.dashboardConfig || {};
 const appState = {
   latest: null,
   history: [],
-  lastSyncText: "Chưa đồng bộ dữ liệu"
+  lastSyncText: "Chưa đồng bộ dữ liệu",
+  commandBusy: false,
+  commandMessage: "Bấm để điều khiển quạt và sưởi từ web"
 };
 
 const metricColors = {
@@ -14,6 +16,12 @@ const metricColors = {
   mq9: "#db5858"
 };
 
+const controlModes = [
+  { value: "auto", label: "Tự động" },
+  { value: "on", label: "Bật" },
+  { value: "off", label: "Tắt" }
+];
+
 function setText(id, value) {
   const element = document.getElementById(id);
   if (element) {
@@ -23,6 +31,24 @@ function setText(id, value) {
 
 function onOffText(value) {
   return value ? "BẬT" : "TẮT";
+}
+
+function sanitizeMode(value) {
+  if (value === "on" || value === "off" || value === "auto") {
+    return value;
+  }
+  return "auto";
+}
+
+function modeLabel(value) {
+  const mode = sanitizeMode(value);
+  if (mode === "on") {
+    return "Đang ép bật";
+  }
+  if (mode === "off") {
+    return "Đang ép tắt";
+  }
+  return "Đang tự động";
 }
 
 function vietnameseAlertText(level, fallbackText) {
@@ -73,6 +99,9 @@ function getTimestampMs(timestamp) {
 }
 
 function isPayloadFresh(latest) {
+  if (!latest) {
+    return false;
+  }
   const staleAfterMs = Number(dashboardConfig.staleAfterMs || 8000);
   const timestampMs = getTimestampMs(latest.serverTimestampIso || latest.receivedAt);
   return Number.isFinite(timestampMs) && Date.now() - timestampMs <= staleAfterMs && latest.packetFresh !== false;
@@ -176,14 +205,14 @@ function historySeries(key) {
     .filter(Boolean);
 }
 
-function buildChartSvg(series, color) {
+function buildChartSvg(series, color, options = {}) {
   if (!series.length) {
     return "";
   }
 
-  const width = 320;
-  const height = 118;
-  const padding = { top: 10, right: 10, bottom: 28, left: 42 };
+  const width = options.width || 320;
+  const height = options.height || 118;
+  const padding = options.padding || { top: 10, right: 10, bottom: 28, left: 42 };
   const innerWidth = width - padding.left - padding.right;
   const innerHeight = height - padding.top - padding.bottom;
 
@@ -236,12 +265,12 @@ function buildChartSvg(series, color) {
   `;
 }
 
-function renderChart(id, key, color) {
+function renderChart(id, key, color, options = {}) {
   const container = document.getElementById(id);
   if (!container) {
     return;
   }
-  container.innerHTML = buildChartSvg(historySeries(key), color);
+  container.innerHTML = buildChartSvg(historySeries(key), color, options);
 }
 
 function renderSensorChips(latest) {
@@ -268,7 +297,6 @@ function renderAlertBox(latest) {
   const alertLevel = fresh ? (latest.alertLevel || "no_data") : "no_data";
   const alertText = fresh ? vietnameseAlertText(alertLevel, latest.alertText) : "MẤT KẾT NỐI";
   const alertSummary = fresh ? vietnameseAlertSummary(alertLevel, latest.alertSummary) : "Không nhận được dữ liệu mới từ Node 2";
-  const mq9Status = document.getElementById("mq9-health-text");
   const mq9Card = document.querySelector(".gas-card");
 
   if (alertBox) {
@@ -287,16 +315,13 @@ function renderAlertBox(latest) {
   setText("alert-summary", alertSummary);
   setText("mq9-status-text", fresh ? (latest.mq9Status === "OK" ? "Dữ liệu MQ9 hợp lệ" : "Đang chờ hoặc lỗi MQ9") : "Không có dữ liệu mới");
 
-  if (mq9Status) {
-    mq9Status.textContent = alertText;
-  }
-
   if (mq9Card) {
-    mq9Card.classList.remove("mq9-sensor-warning", "mq9-sensor-danger");
-    if (alertLevel === "warning") {
+    mq9Card.classList.remove("mq9-sensor-warning", "mq9-sensor-danger", "mq9-no-data");
+    if (!fresh) {
+      mq9Card.classList.add("mq9-no-data");
+    } else if (alertLevel === "warning") {
       mq9Card.classList.add("mq9-sensor-warning");
-    }
-    if (alertLevel === "danger") {
+    } else if (alertLevel === "danger") {
       mq9Card.classList.add("mq9-sensor-danger");
     }
   }
@@ -339,6 +364,36 @@ function renderClock() {
   }));
 }
 
+function renderControlButtons(device, mode) {
+  const container = document.getElementById(`${device}-controls`);
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = controlModes.map((item) => `
+    <button
+      type="button"
+      class="control-button ${mode === item.value ? "active" : ""}"
+      data-device="${device}"
+      data-mode="${item.value}"
+      ${appState.commandBusy ? "disabled" : ""}
+    >
+      ${item.label}
+    </button>
+  `).join("");
+}
+
+function renderControls(latest) {
+  const fanMode = sanitizeMode(latest?.fanMode);
+  const heaterMode = sanitizeMode(latest?.heaterMode);
+
+  renderControlButtons("fan", fanMode);
+  renderControlButtons("heater", heaterMode);
+  setText("fan-mode-text", modeLabel(fanMode));
+  setText("heater-mode-text", modeLabel(heaterMode));
+  setText("control-note", appState.commandMessage);
+}
+
 function renderDashboard(payload) {
   const latest = payload.latest || payload;
   const history = Array.isArray(payload.history) ? payload.history : [];
@@ -351,12 +406,16 @@ function renderDashboard(payload) {
   renderActuators(latest);
   renderSensorChips(latest);
   renderMeta(latest);
+  renderControls(latest);
 
   renderChart("temperature-sparkline", "temperatureC", metricColors.temperature);
   renderChart("humidity-sparkline", "humidityPct", metricColors.humidity);
   renderChart("light-sparkline", "lightLux", metricColors.light);
   renderChart("pressure-sparkline", "pressureHpa", metricColors.pressure);
-  renderChart("mq9-sparkline", "mq9Ppm", metricColors.mq9);
+  renderChart("mq9-sparkline", "mq9Ppm", metricColors.mq9, {
+    height: 136,
+    padding: { top: 12, right: 16, bottom: 30, left: 46 }
+  });
 
   const fresh = isPayloadFresh(latest);
   const level = fresh ? (latest.alertLevel || "no_data") : "no_data";
@@ -369,6 +428,76 @@ function renderDashboard(payload) {
 function showSetupState(message) {
   setConnectionPill("no_data", message);
   setText("last-sync", message);
+  setText("control-note", message);
+}
+
+function buildCommandPayload(nextFanMode, nextHeaterMode) {
+  return {
+    seq: Date.now(),
+    requestedAt: new Date().toISOString(),
+    source: "web",
+    fanMode: sanitizeMode(nextFanMode),
+    heaterMode: sanitizeMode(nextHeaterMode)
+  };
+}
+
+function sendCommand(nextFanMode, nextHeaterMode) {
+  if (!dashboardConfig.commandUrl) {
+    appState.commandMessage = "Chưa cấu hình đường dẫn lệnh Firebase";
+    renderControls(appState.latest);
+    return;
+  }
+
+  const payload = buildCommandPayload(nextFanMode, nextHeaterMode);
+  appState.commandBusy = true;
+  appState.commandMessage = "Đang gửi lệnh điều khiển...";
+  renderControls(appState.latest);
+
+  fetch(`${dashboardConfig.commandUrl}?t=${payload.seq}`, {
+    method: "PUT",
+    cache: "no-store",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Không gửi được lệnh");
+      }
+      return response.json().catch(() => ({}));
+    })
+    .then(() => {
+      if (appState.latest) {
+        appState.latest.fanMode = payload.fanMode;
+        appState.latest.heaterMode = payload.heaterMode;
+        appState.latest.commandSeq = payload.seq;
+      }
+      appState.commandMessage = "Đã gửi lệnh, Node 2 sẽ áp dụng ngay";
+      renderControls(appState.latest);
+      fetchDashboardData();
+    })
+    .catch(() => {
+      appState.commandMessage = "Gửi lệnh thất bại, hãy thử lại";
+      renderControls(appState.latest);
+    })
+    .finally(() => {
+      appState.commandBusy = false;
+      renderControls(appState.latest);
+    });
+}
+
+function handleControlClick(event) {
+  const button = event.target.closest(".control-button");
+  if (!button || appState.commandBusy || !appState.latest) {
+    return;
+  }
+
+  const device = button.dataset.device;
+  const mode = sanitizeMode(button.dataset.mode);
+  const nextFanMode = device === "fan" ? mode : sanitizeMode(appState.latest.fanMode);
+  const nextHeaterMode = device === "heater" ? mode : sanitizeMode(appState.latest.heaterMode);
+  sendCommand(nextFanMode, nextHeaterMode);
 }
 
 function fetchDashboardData() {
@@ -399,6 +528,7 @@ function fetchDashboardData() {
 function bootstrap() {
   renderClock();
   setInterval(renderClock, 1000);
+  document.addEventListener("click", handleControlClick);
   fetchDashboardData();
   setInterval(fetchDashboardData, dashboardConfig.refreshMs || 4000);
 }
