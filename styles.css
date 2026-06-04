@@ -387,122 +387,52 @@ body {
   padding: 12px 18px;
 }
 
-@media (min-width: 1181px) and (max-height: 930px) {
+@media (min-width: 1181px) and (max-height: 980px) {
   .page-shell {
+    zoom: 0.82;
     padding: 10px 12px 12px;
   }
+}
 
-  .topbar {
-    padding: 10px 16px;
-    margin-bottom: 10px;
+@media (min-width: 1181px) and (max-height: 900px) {
+  .page-shell {
+    zoom: 0.76;
+  }
+}
+
+@media (min-width: 1181px) and (max-height: 820px) {
+  .page-shell {
+    zoom: 0.7;
+  }
+}
+
+@supports not (zoom: 1) {
+  @media (min-width: 1181px) and (max-height: 980px) {
+    .page-shell {
+      transform: scale(0.82);
+      transform-origin: top center;
+      width: 121.95%;
+      margin-left: -10.975%;
+      min-height: calc(100vh / 0.82);
+    }
   }
 
-  .eyebrow {
-    margin-bottom: 3px;
-    font-size: 11px;
+  @media (min-width: 1181px) and (max-height: 900px) {
+    .page-shell {
+      transform: scale(0.76);
+      width: 131.58%;
+      margin-left: -15.79%;
+      min-height: calc(100vh / 0.76);
+    }
   }
 
-  .topbar h1 {
-    font-size: 26px;
-  }
-
-  .dashboard-grid {
-    gap: 12px;
-  }
-
-  .metrics-panel {
-    gap: 12px;
-  }
-
-  .metric-card {
-    padding: 12px 14px;
-  }
-
-  .metric-head h2,
-  .side-card h2 {
-    font-size: 16px;
-  }
-
-  .metric-head p,
-  .alert-summary,
-  .clock-date,
-  .clock-subtext,
-  .chips-block p {
-    font-size: 12px;
-  }
-
-  .metric-icon {
-    width: 36px;
-    height: 36px;
-    font-size: 16px;
-  }
-
-  .metric-value {
-    margin: 10px 0 8px;
-  }
-
-  .metric-value span {
-    font-size: 24px;
-  }
-
-  .metric-value small {
-    font-size: 14px;
-  }
-
-  .sparkline {
-    height: 34px;
-  }
-
-  .metric-state {
-    font-size: 15px;
-  }
-
-  .sidebar-panel {
-    gap: 12px;
-  }
-
-  .side-card {
-    padding: 14px 16px;
-  }
-
-  .clock-value {
-    font-size: 42px;
-  }
-
-  .alert-box {
-    margin-top: 10px;
-    padding: 12px;
-  }
-
-  .alert-title {
-    font-size: 22px;
-  }
-
-  .status-grid {
-    margin-top: 10px;
-    gap: 6px;
-  }
-
-  .status-row {
-    padding-bottom: 6px;
-  }
-
-  .chips-block {
-    margin-top: 10px;
-  }
-
-  .chip {
-    padding: 6px 10px;
-    font-size: 11px;
-  }
-
-  .bottom-panel {
-    margin-top: 10px;
-    padding: 10px 14px;
-  }
-
-  .panel-line {
-    font-size: 13px;
+  @media (min-width: 1181px) and (max-height: 820px) {
+    .page-shell {
+      transform: scale(0.7);
+      width: 142.86%;
+      margin-left: -21.43%;
+      min-height: calc(100vh / 0.7);
+    }
   }
 }
 
