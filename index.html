@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>He Thong Giam Sat Node 2</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./config.js"></script>
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Node 2 Dashboard</p>
+          <h1>HE THONG GIAM SAT NODE 2</h1>
+        </div>
+        <div class="topbar-meta">
+          <span id="connection-pill" class="pill pill-neutral">Dang ket noi</span>
+          <span class="user-label">Admin | Dang xuat</span>
+        </div>
+      </header>
+
+      <main class="dashboard-grid">
+        <section class="metrics-panel">
+          <article class="metric-card temp-card">
+            <div class="metric-head">
+              <span class="metric-icon">T</span>
+              <div>
+                <h2>Nhiet do</h2>
+                <p>BME680</p>
+              </div>
+            </div>
+            <div class="metric-value"><span id="temperature-value">--</span><small>C</small></div>
+            <div class="sparkline" id="temperature-sparkline"></div>
+          </article>
+
+          <article class="metric-card hum-card">
+            <div class="metric-head">
+              <span class="metric-icon">H</span>
+              <div>
+                <h2>Do am</h2>
+                <p>BME680</p>
+              </div>
+            </div>
+            <div class="metric-value"><span id="humidity-value">--</span><small>%</small></div>
+            <div class="sparkline" id="humidity-sparkline"></div>
+          </article>
+
+          <article class="metric-card light-card">
+            <div class="metric-head">
+              <span class="metric-icon">L</span>
+              <div>
+                <h2>Cuong do anh sang</h2>
+                <p>BH1750</p>
+              </div>
+            </div>
+            <div class="metric-value"><span id="light-value">--</span><small>LUX</small></div>
+            <div class="sparkline" id="light-sparkline"></div>
+          </article>
+
+          <article class="metric-card pressure-card">
+            <div class="metric-head">
+              <span class="metric-icon">P</span>
+              <div>
+                <h2>Ap suat</h2>
+                <p>BME680</p>
+              </div>
+            </div>
+            <div class="metric-value"><span id="pressure-value">--</span><small>hPa</small></div>
+            <div class="sparkline" id="pressure-sparkline"></div>
+          </article>
+
+          <article class="metric-card gas-card">
+            <div class="metric-head">
+              <span class="metric-icon">G</span>
+              <div>
+                <h2>Cam bien MQ9 (Gas/CO)</h2>
+                <p id="mq9-status-text">Dang cho du lieu</p>
+              </div>
+            </div>
+            <div class="metric-value"><span id="mq9-value">--</span><small>ppm</small></div>
+            <div class="metric-state" id="mq9-health-text">Dang cho du lieu</div>
+            <div class="sparkline" id="mq9-sparkline"></div>
+          </article>
+        </section>
+
+        <aside class="sidebar-panel">
+          <article class="side-card clock-card">
+            <h2>Thoi gian hien tai</h2>
+            <p class="clock-date" id="clock-date">--</p>
+            <div class="clock-value" id="clock-value">--:--:--</div>
+            <p class="clock-subtext">live time update</p>
+          </article>
+
+          <article class="side-card alert-card">
+            <h2>Trang thai Canh bao Node 2</h2>
+            <div class="alert-box" id="alert-box">
+              <div>
+                <div class="alert-title" id="alert-title">CHO DU LIEU</div>
+                <p class="alert-summary" id="alert-summary">Dang cho du lieu tu Node 1</p>
+              </div>
+              <span class="alert-dot" id="alert-dot"></span>
+            </div>
+
+            <div class="status-grid">
+              <div class="status-row">
+                <span>Fan</span>
+                <strong id="fan-state">OFF</strong>
+              </div>
+              <div class="status-row">
+                <span>Heater</span>
+                <strong id="heater-state">OFF</strong>
+              </div>
+              <div class="status-row">
+                <span>Buzzer</span>
+                <strong id="buzzer-state">OFF</strong>
+              </div>
+              <div class="status-row">
+                <span>RSSI</span>
+                <strong id="wifi-rssi">--</strong>
+              </div>
+            </div>
+
+            <div class="chips-block">
+              <p>Trang thai cam bien</p>
+              <div class="chip-list" id="sensor-chip-list"></div>
+            </div>
+          </article>
+        </aside>
+      </main>
+
+      <section class="bottom-panel">
+        <div class="panel-line">
+          <span id="device-name">HE THONG GIAM SAT NODE 2</span>
+          <span id="device-location">Ha Noi, VN</span>
+          <span id="last-sync">Chua dong bo cloud</span>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>
