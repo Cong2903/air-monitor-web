@@ -51,6 +51,19 @@ function formatNumber(value, digits = 1) {
   return Number.isFinite(value) ? value.toFixed(digits) : "--";
 }
 
+function formatAxisValue(value) {
+  if (!Number.isFinite(value)) {
+    return "--";
+  }
+  if (Math.abs(value) >= 100) {
+    return value.toFixed(0);
+  }
+  if (Math.abs(value) >= 10) {
+    return value.toFixed(1);
+  }
+  return value.toFixed(2);
+}
+
 function getTimestampMs(timestamp) {
   if (!timestamp) {
     return NaN;
@@ -97,26 +110,27 @@ function setConnectionPill(level, text) {
   pill.textContent = text;
 }
 
-function buildSmoothPath(values, width, height) {
-  if (values.length === 1) {
-    const y = height / 2;
-    return `M 0 ${y} L ${width} ${y}`;
+function hexToRgba(hex, alpha) {
+  const clean = hex.replace("#", "");
+  const expanded = clean.length === 3
+    ? clean.split("").map((part) => part + part).join("")
+    : clean;
+  const numeric = Number.parseInt(expanded, 16);
+  const r = (numeric >> 16) & 255;
+  const g = (numeric >> 8) & 255;
+  const b = numeric & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function buildSmoothLinePath(points) {
+  if (points.length === 1) {
+    return `M ${points[0].x} ${points[0].y}`;
   }
 
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const step = width / (values.length - 1);
-  const points = values.map((value, index) => {
-    const x = index * step;
-    const y = height - ((value - min) / range) * (height - 8) - 4;
-    return { x, y };
-  });
-
   let path = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 0; i < points.length - 1; i += 1) {
-    const current = points[i];
-    const next = points[i + 1];
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const current = points[index];
+    const next = points[index + 1];
     const midX = (current.x + next.x) / 2;
     const midY = (current.y + next.y) / 2;
     path += ` Q ${current.x} ${current.y} ${midX} ${midY}`;
@@ -126,31 +140,108 @@ function buildSmoothPath(values, width, height) {
   return path;
 }
 
-function buildSparkline(values, color) {
-  if (!values.length) {
+function buildAreaPath(points, baselineY) {
+  const linePath = buildSmoothLinePath(points);
+  const first = points[0];
+  const last = points[points.length - 1];
+  return `${linePath} L ${last.x} ${baselineY} L ${first.x} ${baselineY} Z`;
+}
+
+function formatTimeLabel(timestampMs) {
+  return new Date(timestampMs).toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
+function historySeries(key) {
+  const rawHistory = appState.history.length ? appState.history : (appState.latest ? [appState.latest] : []);
+  const latestTimestamp = getTimestampMs(appState.latest?.serverTimestampIso || appState.latest?.receivedAt) || Date.now();
+  const sampleIntervalMs = Number(dashboardConfig.sampleIntervalMs || 2000);
+
+  return rawHistory
+    .map((entry, index, array) => {
+      const value = Number(entry[key]);
+      if (!Number.isFinite(value)) {
+        return null;
+      }
+
+      const explicitTimestamp = getTimestampMs(entry.serverTimestampIso || entry.receivedAt || entry.timestampIso);
+      const timestamp = Number.isFinite(explicitTimestamp)
+        ? explicitTimestamp
+        : latestTimestamp - (array.length - 1 - index) * sampleIntervalMs;
+
+      return { value, timestamp };
+    })
+    .filter(Boolean);
+}
+
+function buildChartSvg(series, color) {
+  if (!series.length) {
     return "";
   }
 
   const width = 320;
-  const height = 56;
-  const path = buildSmoothPath(values, width, height);
+  const height = 112;
+  const padding = { top: 8, right: 8, bottom: 24, left: 38 };
+  const innerWidth = width - padding.left - padding.right;
+  const innerHeight = height - padding.top - padding.bottom;
+
+  const values = series.map((point) => point.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || Math.max(Math.abs(max) * 0.05, 1);
+  const adjustedMin = min - range * 0.08;
+  const adjustedMax = max + range * 0.08;
+  const adjustedRange = adjustedMax - adjustedMin || 1;
+
+  const points = series.map((point, index) => {
+    const x = padding.left + (series.length === 1 ? innerWidth / 2 : (index / (series.length - 1)) * innerWidth);
+    const y = padding.top + innerHeight - ((point.value - adjustedMin) / adjustedRange) * innerHeight;
+    return { x, y };
+  });
+
+  const linePath = buildSmoothLinePath(points);
+  const areaPath = buildAreaPath(points, padding.top + innerHeight);
+  const yTicks = [adjustedMax, adjustedMin + adjustedRange / 2, adjustedMin];
+  const xTickIndices = Array.from(new Set([
+    0,
+    Math.floor((series.length - 1) / 3),
+    Math.floor(((series.length - 1) * 2) / 3),
+    series.length - 1
+  ])).sort((left, right) => left - right);
+
+  const gridLines = yTicks.map((tickValue) => {
+    const y = padding.top + innerHeight - ((tickValue - adjustedMin) / adjustedRange) * innerHeight;
+    return `<line class="chart-grid-line" x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}"></line>
+      <text class="chart-axis-text" x="${padding.left - 6}" y="${y + 4}" text-anchor="end">${formatAxisValue(tickValue)}</text>`;
+  }).join("");
+
+  const xTicks = xTickIndices.map((tickIndex) => {
+    const tick = series[tickIndex];
+    const x = points[tickIndex].x;
+    return `<line class="chart-axis-line" x1="${x}" y1="${height - padding.bottom}" x2="${x}" y2="${height - padding.bottom + 4}"></line>
+      <text class="chart-time-text" x="${x}" y="${height - 6}" text-anchor="middle">${formatTimeLabel(tick.timestamp)}</text>`;
+  }).join("");
+
   return `
     <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
-      <path d="${path}" style="color:${color}"></path>
+      ${gridLines}
+      <line class="chart-axis-line" x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}"></line>
+      <path class="chart-area" d="${areaPath}" style="fill:${hexToRgba(color, 0.16)}"></path>
+      <path class="chart-line" d="${linePath}" style="stroke:${color}"></path>
+      ${xTicks}
     </svg>
   `;
 }
 
-function historyValues(key) {
-  return appState.history.map((entry) => Number(entry[key])).filter((value) => Number.isFinite(value));
-}
-
-function renderSparkline(id, key, color) {
+function renderChart(id, key, color) {
   const container = document.getElementById(id);
   if (!container) {
     return;
   }
-  container.innerHTML = buildSparkline(historyValues(key), color);
+  container.innerHTML = buildChartSvg(historySeries(key), color);
 }
 
 function renderSensorChips(latest) {
@@ -261,11 +352,11 @@ function renderDashboard(payload) {
   renderSensorChips(latest);
   renderMeta(latest);
 
-  renderSparkline("temperature-sparkline", "temperatureC", metricColors.temperature);
-  renderSparkline("humidity-sparkline", "humidityPct", metricColors.humidity);
-  renderSparkline("light-sparkline", "lightLux", metricColors.light);
-  renderSparkline("pressure-sparkline", "pressureHpa", metricColors.pressure);
-  renderSparkline("mq9-sparkline", "mq9Ppm", metricColors.mq9);
+  renderChart("temperature-sparkline", "temperatureC", metricColors.temperature);
+  renderChart("humidity-sparkline", "humidityPct", metricColors.humidity);
+  renderChart("light-sparkline", "lightLux", metricColors.light);
+  renderChart("pressure-sparkline", "pressureHpa", metricColors.pressure);
+  renderChart("mq9-sparkline", "mq9Ppm", metricColors.mq9);
 
   const fresh = isPayloadFresh(latest);
   const level = fresh ? (latest.alertLevel || "no_data") : "no_data";

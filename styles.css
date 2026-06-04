@@ -187,15 +187,15 @@ body {
 }
 
 .temp-card .metric-icon,
-.temp-card .sparkline svg path { color: var(--orange); }
+.temp-card .sparkline .chart-line { color: var(--orange); }
 .hum-card .metric-icon,
-.hum-card .sparkline svg path { color: var(--blue); }
+.hum-card .sparkline .chart-line { color: var(--blue); }
 .light-card .metric-icon,
-.light-card .sparkline svg path { color: var(--yellow); }
+.light-card .sparkline .chart-line { color: var(--yellow); }
 .pressure-card .metric-icon,
-.pressure-card .sparkline svg path { color: var(--silver); }
+.pressure-card .sparkline .chart-line { color: var(--silver); }
 .gas-card .metric-icon,
-.gas-card .sparkline svg path { color: #5e91a8; }
+.gas-card .sparkline .chart-line { color: #5e91a8; }
 .gas-card { grid-column: span 2; }
 .gas-card .metric-value { margin-bottom: 8px; }
 .gas-card .metric-state {
@@ -206,14 +206,14 @@ body {
 .mq9-sensor-warning .metric-state { color: var(--warn); }
 .mq9-sensor-danger .metric-state { color: var(--red); }
 .mq9-card .metric-icon,
-.mq9-card .sparkline svg path { color: var(--red); }
+.mq9-card .sparkline .chart-line { color: var(--red); }
 
 .temp-card .metric-icon { background: linear-gradient(135deg, #f5a34d, #e86b1d); }
 .hum-card .metric-icon { background: linear-gradient(135deg, #65b8ff, #2674d2); }
 .light-card .metric-icon { background: linear-gradient(135deg, #ffe278, #d5a200); }
 .pressure-card .metric-icon { background: linear-gradient(135deg, #bdc5d0, #7d8a98); }
 .gas-card .metric-icon { background: linear-gradient(135deg, #6eb1cf, #2f6f89); }
-.gas-card .sparkline svg path { color: #4c88a3; }
+.gas-card .sparkline .chart-line { color: #4c88a3; }
 
 .metric-value {
   position: relative;
@@ -238,22 +238,46 @@ body {
 .sparkline {
   position: relative;
   z-index: 1;
-  height: clamp(42px, 6vh, 58px);
+  height: clamp(92px, 12vh, 118px);
+  margin-top: 8px;
 }
 
 .sparkline svg {
   width: 100%;
   height: 100%;
+  overflow: visible;
 }
 
-.sparkline path {
+.sparkline .chart-line {
   fill: none;
   stroke: currentColor;
   stroke-width: 3.8;
   stroke-linecap: round;
   stroke-linejoin: round;
-  opacity: 0.92;
-  filter: drop-shadow(0 8px 12px rgba(46, 131, 221, 0.12));
+  opacity: 0.96;
+  filter: drop-shadow(0 8px 12px rgba(46, 131, 221, 0.16));
+}
+
+.sparkline .chart-area {
+  stroke: none;
+}
+
+.sparkline .chart-grid-line {
+  stroke: rgba(96, 112, 134, 0.16);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.sparkline .chart-axis-line {
+  stroke: rgba(96, 112, 134, 0.28);
+  stroke-width: 1;
+}
+
+.sparkline .chart-axis-text,
+.sparkline .chart-time-text {
+  fill: rgba(96, 112, 134, 0.88);
+  font-size: 10px;
+  font-weight: 600;
 }
 
 @keyframes pillPulse {
