@@ -183,7 +183,8 @@ body {
   border-radius: 14px;
   color: #fff;
   font-weight: 800;
-  font-size: 18px;
+  font-size: 20px;
+  line-height: 1;
 }
 
 .temp-card .metric-icon,
