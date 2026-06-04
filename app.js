@@ -453,6 +453,15 @@ function sendCommand(nextFanMode, nextHeaterMode) {
   }
 
   const payload = buildCommandPayload(nextFanMode, nextHeaterMode);
+  const previousFanMode = sanitizeMode(appState.latest?.fanMode);
+  const previousHeaterMode = sanitizeMode(appState.latest?.heaterMode);
+
+  if (appState.latest) {
+    appState.latest.fanMode = payload.fanMode;
+    appState.latest.heaterMode = payload.heaterMode;
+    appState.latest.commandSeq = payload.seq;
+  }
+
   appState.commandBusy = true;
   appState.commandMessage = "Đang gửi lệnh điều khiển...";
   renderControls(appState.latest);
@@ -472,16 +481,15 @@ function sendCommand(nextFanMode, nextHeaterMode) {
       return response.json().catch(() => ({}));
     })
     .then(() => {
-      if (appState.latest) {
-        appState.latest.fanMode = payload.fanMode;
-        appState.latest.heaterMode = payload.heaterMode;
-        appState.latest.commandSeq = payload.seq;
-      }
       appState.commandMessage = "Đã gửi lệnh, Node 2 sẽ áp dụng ngay";
       renderControls(appState.latest);
       fetchDashboardData();
     })
     .catch(() => {
+      if (appState.latest) {
+        appState.latest.fanMode = previousFanMode;
+        appState.latest.heaterMode = previousHeaterMode;
+      }
       appState.commandMessage = "Gửi lệnh thất bại, hãy thử lại";
       renderControls(appState.latest);
     })
