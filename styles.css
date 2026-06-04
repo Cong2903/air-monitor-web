@@ -1,6 +1,6 @@
 :root {
-  --bg-top: #f3ede4;
-  --bg-bottom: #e7ddd0;
+  --bg-top: #f7f1e8;
+  --bg-bottom: #eadfce;
   --paper: rgba(255, 255, 255, 0.9);
   --paper-strong: #ffffff;
   --ink: #20222b;
@@ -15,8 +15,8 @@
   --green: #31a24c;
   --warn: #de9b2f;
   --neutral: #607086;
-  --shell-padding-x: clamp(10px, 1.3vw, 18px);
-  --shell-padding-y: clamp(10px, 1.2vw, 16px);
+  --shell-padding-x: 1cm;
+  --shell-padding-y: 1cm;
   --panel-gap: clamp(10px, 1vw, 16px);
   --card-radius: clamp(18px, 1.3vw, 22px);
   --card-padding: clamp(12px, 1vw, 15px);
@@ -36,7 +36,8 @@ body {
   color: var(--ink);
   overflow-x: hidden;
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.7), transparent 28%),
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.78), transparent 30%),
+    radial-gradient(circle at right center, rgba(255, 248, 238, 0.82), transparent 26%),
     linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
 }
 
@@ -670,6 +671,11 @@ body {
     overflow-y: auto;
   }
 
+  :root {
+    --shell-padding-x: 18px;
+    --shell-padding-y: 18px;
+  }
+
   .page-shell {
     min-height: auto;
   }
@@ -691,6 +697,11 @@ body {
 }
 
 @media (max-width: 760px) {
+  :root {
+    --shell-padding-x: 12px;
+    --shell-padding-y: 12px;
+  }
+
   .page-shell {
     padding: 12px;
   }

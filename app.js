@@ -2,6 +2,7 @@ const dashboardConfig = window.dashboardConfig || {};
 
 const ACCESS_PASSWORD = "MangCamBien123";
 const AUTH_STORAGE_KEY = "air_monitor_web_auth";
+const COMMAND_UI_HOLD_MS = 6000;
 
 const appState = {
   latest: null,
@@ -9,7 +10,8 @@ const appState = {
   lastSyncText: "Chưa đồng bộ dữ liệu",
   commandBusy: false,
   commandMessage: "Bấm để điều khiển quạt và sưởi từ web",
-  refreshTimerId: null
+  refreshTimerId: null,
+  pendingControl: null
 };
 
 const metricColors = {
@@ -387,14 +389,42 @@ function renderControlButtons(device, mode) {
   `).join("");
 }
 
-function renderControls(latest) {
-  const fanMode = sanitizeMode(latest?.fanMode);
-  const heaterMode = sanitizeMode(latest?.heaterMode);
+function clearPendingControl() {
+  appState.pendingControl = null;
+}
 
-  renderControlButtons("fan", fanMode);
-  renderControlButtons("heater", heaterMode);
-  setText("fan-mode-text", modeLabel(fanMode));
-  setText("heater-mode-text", modeLabel(heaterMode));
+function syncPendingControlWithLatest(latest) {
+  if (!appState.pendingControl) {
+    return;
+  }
+
+  const pending = appState.pendingControl;
+  const latestFanMode = sanitizeMode(latest?.fanMode);
+  const latestHeaterMode = sanitizeMode(latest?.heaterMode);
+  const latestSeq = Number(latest?.commandSeq || 0);
+  const commandMatched = latestFanMode === pending.fanMode && latestHeaterMode === pending.heaterMode;
+  const seqMatched = latestSeq >= pending.seq && latestSeq !== 0;
+  const expired = Date.now() - pending.startedAt > COMMAND_UI_HOLD_MS;
+
+  if (commandMatched || seqMatched || expired) {
+    clearPendingControl();
+  }
+}
+
+function renderControls(latest) {
+  syncPendingControlWithLatest(latest);
+
+  const effectiveFanMode = appState.pendingControl
+    ? appState.pendingControl.fanMode
+    : sanitizeMode(latest?.fanMode);
+  const effectiveHeaterMode = appState.pendingControl
+    ? appState.pendingControl.heaterMode
+    : sanitizeMode(latest?.heaterMode);
+
+  renderControlButtons("fan", effectiveFanMode);
+  renderControlButtons("heater", effectiveHeaterMode);
+  setText("fan-mode-text", modeLabel(effectiveFanMode));
+  setText("heater-mode-text", modeLabel(effectiveHeaterMode));
   setText("control-note", appState.commandMessage);
 }
 
@@ -455,6 +485,12 @@ function sendCommand(nextFanMode, nextHeaterMode) {
   const payload = buildCommandPayload(nextFanMode, nextHeaterMode);
   const previousFanMode = sanitizeMode(appState.latest?.fanMode);
   const previousHeaterMode = sanitizeMode(appState.latest?.heaterMode);
+  appState.pendingControl = {
+    fanMode: payload.fanMode,
+    heaterMode: payload.heaterMode,
+    seq: payload.seq,
+    startedAt: Date.now()
+  };
 
   if (appState.latest) {
     appState.latest.fanMode = payload.fanMode;
@@ -486,6 +522,7 @@ function sendCommand(nextFanMode, nextHeaterMode) {
       fetchDashboardData();
     })
     .catch(() => {
+      clearPendingControl();
       if (appState.latest) {
         appState.latest.fanMode = previousFanMode;
         appState.latest.heaterMode = previousHeaterMode;
