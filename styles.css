@@ -97,6 +97,13 @@ body {
   background: linear-gradient(135deg, #6d7d95, #445062);
 }
 
+.pill-disconnected {
+  color: #fff;
+  background: linear-gradient(135deg, #3ea7ff, #0a63c9);
+  animation: pillPulse 1s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(62, 167, 255, 0.45);
+}
+
 .pill-stable {
   color: #fff;
   background: linear-gradient(135deg, #4ab36d, #238d42);
@@ -110,11 +117,6 @@ body {
 .pill-danger {
   color: #fff;
   background: linear-gradient(135deg, #f07979, #c93d3d);
-}
-
-.user-label {
-  color: var(--muted);
-  font-weight: 600;
 }
 
 .dashboard-grid {
@@ -247,10 +249,26 @@ body {
 .sparkline path {
   fill: none;
   stroke: currentColor;
-  stroke-width: 3.2;
+  stroke-width: 3.8;
   stroke-linecap: round;
   stroke-linejoin: round;
   opacity: 0.92;
+  filter: drop-shadow(0 8px 12px rgba(46, 131, 221, 0.12));
+}
+
+@keyframes pillPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(62, 167, 255, 0.45);
+  }
+  70% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 12px rgba(62, 167, 255, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(62, 167, 255, 0);
+  }
 }
 
 .metric-state {

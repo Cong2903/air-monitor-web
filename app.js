@@ -1,4 +1,5 @@
 const dashboardConfig = window.dashboardConfig || {};
+
 const appState = {
   latest: null,
   history: [],
@@ -54,7 +55,6 @@ function getTimestampMs(timestamp) {
   if (!timestamp) {
     return NaN;
   }
-
   const parsed = new Date(timestamp).getTime();
   return Number.isNaN(parsed) ? NaN : parsed;
 }
@@ -62,28 +62,17 @@ function getTimestampMs(timestamp) {
 function isPayloadFresh(latest) {
   const staleAfterMs = Number(dashboardConfig.staleAfterMs || 8000);
   const timestampMs = getTimestampMs(latest.serverTimestampIso || latest.receivedAt);
-
-  if (!Number.isFinite(timestampMs)) {
-    return false;
-  }
-
-  if (Date.now() - timestampMs > staleAfterMs) {
-    return false;
-  }
-
-  return latest.packetFresh !== false;
+  return Number.isFinite(timestampMs) && Date.now() - timestampMs <= staleAfterMs && latest.packetFresh !== false;
 }
 
 function formatDateTime(timestamp) {
   if (!timestamp) {
     return "Chưa đồng bộ Firebase";
   }
-
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) {
     return timestamp;
   }
-
   return `Cập nhật lúc ${date.toLocaleString("vi-VN")}`;
 }
 
@@ -100,10 +89,41 @@ function setConnectionPill(level, text) {
     pill.classList.add("pill-warning");
   } else if (level === "danger") {
     pill.classList.add("pill-danger");
+  } else if (level === "no_data") {
+    pill.classList.add("pill-disconnected");
   } else {
     pill.classList.add("pill-neutral");
   }
   pill.textContent = text;
+}
+
+function buildSmoothPath(values, width, height) {
+  if (values.length === 1) {
+    const y = height / 2;
+    return `M 0 ${y} L ${width} ${y}`;
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const step = width / (values.length - 1);
+  const points = values.map((value, index) => {
+    const x = index * step;
+    const y = height - ((value - min) / range) * (height - 8) - 4;
+    return { x, y };
+  });
+
+  let path = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const current = points[i];
+    const next = points[i + 1];
+    const midX = (current.x + next.x) / 2;
+    const midY = (current.y + next.y) / 2;
+    path += ` Q ${current.x} ${current.y} ${midX} ${midY}`;
+  }
+  const last = points[points.length - 1];
+  path += ` T ${last.x} ${last.y}`;
+  return path;
 }
 
 function buildSparkline(values, color) {
@@ -113,28 +133,16 @@ function buildSparkline(values, color) {
 
   const width = 320;
   const height = 56;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const step = values.length > 1 ? width / (values.length - 1) : width;
-
-  const points = values.map((value, index) => {
-    const x = index * step;
-    const y = height - ((value - min) / range) * (height - 8) - 4;
-    return `${x},${y}`;
-  });
-
+  const path = buildSmoothPath(values, width, height);
   return `
     <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M ${points.join(" L ")}" style="color:${color}"></path>
+      <path d="${path}" style="color:${color}"></path>
     </svg>
   `;
 }
 
 function historyValues(key) {
-  return appState.history
-    .map((entry) => Number(entry[key]))
-    .filter((value) => Number.isFinite(value));
+  return appState.history.map((entry) => Number(entry[key])).filter((value) => Number.isFinite(value));
 }
 
 function renderSparkline(id, key, color) {
@@ -142,7 +150,6 @@ function renderSparkline(id, key, color) {
   if (!container) {
     return;
   }
-
   container.innerHTML = buildSparkline(historyValues(key), color);
 }
 
@@ -153,7 +160,6 @@ function renderSensorChips(latest) {
   }
 
   const fresh = isPayloadFresh(latest);
-
   const chips = [
     { label: `BME680 ${fresh ? (latest.bme680Status === "OK" ? "TỐT" : "LỖI") : "TẮT"}`, good: fresh && latest.bme680Status === "OK" },
     { label: `BH1750 ${fresh ? (latest.bh1750Status === "OK" ? "TỐT" : "LỖI") : "TẮT"}`, good: fresh && latest.bh1750Status === "OK" },
@@ -169,18 +175,21 @@ function renderAlertBox(latest) {
   const alertBox = document.getElementById("alert-box");
   const fresh = isPayloadFresh(latest);
   const alertLevel = fresh ? (latest.alertLevel || "no_data") : "no_data";
-  const alertText = fresh
-    ? vietnameseAlertText(alertLevel, latest.alertText)
-    : "MẤT KẾT NỐI";
-  const alertSummary = fresh
-    ? vietnameseAlertSummary(alertLevel, latest.alertSummary)
-    : "Không nhận được dữ liệu mới từ Node 2";
+  const alertText = fresh ? vietnameseAlertText(alertLevel, latest.alertText) : "MẤT KẾT NỐI";
+  const alertSummary = fresh ? vietnameseAlertSummary(alertLevel, latest.alertSummary) : "Không nhận được dữ liệu mới từ Node 2";
   const mq9Status = document.getElementById("mq9-health-text");
   const mq9Card = document.querySelector(".gas-card");
 
   if (alertBox) {
     alertBox.className = "alert-box";
-    alertBox.classList.add(`state-${alertLevel === "stable" ? "stable" : alertLevel === "warning" ? "warning" : alertLevel === "danger" ? "danger" : "neutral"}`);
+    const alertClass = alertLevel === "stable"
+      ? "state-stable"
+      : alertLevel === "warning"
+        ? "state-warning"
+        : alertLevel === "danger"
+          ? "state-danger"
+          : "state-neutral";
+    alertBox.classList.add(alertClass);
   }
 
   setText("alert-title", alertText);
@@ -220,7 +229,7 @@ function renderMetrics(latest) {
 }
 
 function renderMeta(latest) {
-  setText("device-name", latest.deviceName || dashboardConfig.deviceName || "HỆ THỐNG GIÁM SÁT NODE 2");
+  setText("device-name", latest.deviceName || dashboardConfig.deviceName || "TRẠNG THÁI MÔI TRƯỜNG");
   setText("device-location", latest.location || dashboardConfig.locationLabel || "Hà Nội, VN");
   appState.lastSyncText = isPayloadFresh(latest)
     ? formatDateTime(latest.serverTimestampIso || latest.receivedAt)
@@ -267,7 +276,7 @@ function renderDashboard(payload) {
 }
 
 function showSetupState(message) {
-  setConnectionPill("neutral", message);
+  setConnectionPill("no_data", message);
   setText("last-sync", message);
 }
 
@@ -276,6 +285,7 @@ function fetchDashboardData() {
     showSetupState("Chưa cấu hình tệp dữ liệu");
     return;
   }
+
   fetch(`${dashboardConfig.dataUrl}?t=${Date.now()}`, { cache: "no-store" })
     .then((response) => {
       if (!response.ok) {
