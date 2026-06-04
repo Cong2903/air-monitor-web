@@ -26,7 +26,7 @@ function formatNumber(value, digits = 1) {
 
 function formatDateTime(timestamp) {
   if (!timestamp) {
-    return "Chua dong bo GitHub";
+    return "Chua dong bo Firebase";
   }
 
   const date = new Date(timestamp);
@@ -198,7 +198,7 @@ function renderDashboard(payload) {
   renderSparkline("mq9-sparkline", "mq9Ppm", metricColors.mq9);
 
   const level = latest.alertLevel || "no_data";
-  const connectionText = payload.ok ? "GitHub dang dong bo" : "GitHub tam mat ket noi";
+  const connectionText = payload.ok ? "Firebase dang dong bo" : "Firebase tam mat ket noi";
   setConnectionPill(level, connectionText);
 }
 
