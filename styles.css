@@ -32,6 +32,108 @@ body {
     linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
 }
 
+.login-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.55), transparent 30%),
+    rgba(239, 231, 219, 0.72);
+  backdrop-filter: blur(14px);
+}
+
+.login-screen.is-hidden {
+  display: none;
+}
+
+.login-card {
+  width: min(100%, 430px);
+  padding: 28px 28px 24px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 24px 50px rgba(82, 61, 32, 0.18);
+}
+
+.login-card-head h1 {
+  margin: 6px 0 0;
+  font-size: clamp(28px, 3vw, 36px);
+}
+
+.login-eyebrow {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.login-subtext {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.field-group {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.field-group span {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.field-group input {
+  width: 100%;
+  border: 1px solid rgba(92, 110, 132, 0.2);
+  border-radius: 16px;
+  padding: 14px 16px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: #f8fafc;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.field-group input:focus {
+  border-color: #4b9df0;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(75, 157, 240, 0.16);
+}
+
+.login-error {
+  margin: 14px 0 0;
+  color: #c93d3d;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.login-button {
+  width: 100%;
+  margin-top: 18px;
+  border: 0;
+  border-radius: 18px;
+  padding: 14px 18px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #4ab36d, #238d42);
+  box-shadow: 0 14px 22px rgba(35, 141, 66, 0.2);
+  cursor: pointer;
+}
+
+.login-button:hover {
+  filter: brightness(1.03);
+}
+
 .page-shell {
   max-width: 1440px;
   margin: 0 auto;
@@ -39,6 +141,11 @@ body {
   padding: 14px 16px 16px;
   display: flex;
   flex-direction: column;
+}
+
+.page-shell.is-locked {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .topbar,
@@ -349,10 +456,14 @@ body {
 }
 
 .clock-value {
-  margin-top: 10px;
+  margin-top: 18px;
   font-size: clamp(34px, 2.6vw, 48px);
   font-weight: 800;
   line-height: 1;
+}
+
+.clock-date {
+  margin-top: 12px;
 }
 
 .alert-box {
@@ -644,7 +755,7 @@ body {
 
   .topbar-meta {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-start;
   }
 
   .metric-card,

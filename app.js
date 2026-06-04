@@ -1,11 +1,15 @@
 const dashboardConfig = window.dashboardConfig || {};
 
+const ACCESS_PASSWORD = "MangCamBien123";
+const AUTH_STORAGE_KEY = "air_monitor_web_auth";
+
 const appState = {
   latest: null,
   history: [],
   lastSyncText: "Chưa đồng bộ dữ liệu",
   commandBusy: false,
-  commandMessage: "Bấm để điều khiển quạt và sưởi từ web"
+  commandMessage: "Bấm để điều khiển quạt và sưởi từ web",
+  refreshTimerId: null
 };
 
 const metricColors = {
@@ -500,6 +504,126 @@ function handleControlClick(event) {
   sendCommand(nextFanMode, nextHeaterMode);
 }
 
+function normalizeUserName(value) {
+  return String(value || "").trim();
+}
+
+function setLoginError(message = "") {
+  setText("login-error", message);
+  const errorElement = document.getElementById("login-error");
+  if (errorElement) {
+    errorElement.hidden = !message;
+  }
+}
+
+function persistAuthSession(userName) {
+  sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
+    userName,
+    authenticatedAt: Date.now()
+  }));
+}
+
+function restoreAuthSession() {
+  try {
+    const raw = sessionStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) {
+      return "";
+    }
+    const parsed = JSON.parse(raw);
+    return normalizeUserName(parsed.userName);
+  } catch {
+    return "";
+  }
+}
+
+function clearAuthSession() {
+  sessionStorage.removeItem(AUTH_STORAGE_KEY);
+}
+
+function showDashboard() {
+  const loginScreen = document.getElementById("login-screen");
+  const dashboardShell = document.getElementById("dashboard-shell");
+  if (loginScreen) {
+    loginScreen.classList.add("is-hidden");
+  }
+  if (dashboardShell) {
+    dashboardShell.classList.remove("is-locked");
+  }
+}
+
+function showLoginScreen() {
+  const loginScreen = document.getElementById("login-screen");
+  const dashboardShell = document.getElementById("dashboard-shell");
+  if (loginScreen) {
+    loginScreen.classList.remove("is-hidden");
+  }
+  if (dashboardShell) {
+    dashboardShell.classList.add("is-locked");
+  }
+}
+
+function startDataRefresh() {
+  if (appState.refreshTimerId !== null) {
+    return;
+  }
+  fetchDashboardData();
+  appState.refreshTimerId = window.setInterval(fetchDashboardData, dashboardConfig.refreshMs || 4000);
+}
+
+function stopDataRefresh() {
+  if (appState.refreshTimerId !== null) {
+    window.clearInterval(appState.refreshTimerId);
+    appState.refreshTimerId = null;
+  }
+}
+
+function finishLogin(userName) {
+  persistAuthSession(userName);
+  setLoginError("");
+  showDashboard();
+  startDataRefresh();
+}
+
+function handleLoginSubmit(event) {
+  event.preventDefault();
+
+  const userNameInput = document.getElementById("login-username");
+  const passwordInput = document.getElementById("login-password");
+  const userName = normalizeUserName(userNameInput?.value);
+  const password = String(passwordInput?.value || "");
+
+  if (!userName) {
+    setLoginError("Vui lòng nhập tên người dùng.");
+    userNameInput?.focus();
+    return;
+  }
+
+  if (password !== ACCESS_PASSWORD) {
+    setLoginError("Mật khẩu chưa đúng. Hãy thử lại.");
+    passwordInput?.focus();
+    passwordInput?.select();
+    return;
+  }
+
+  finishLogin(userName);
+}
+
+function initAuth() {
+  const loginForm = document.getElementById("login-form");
+  loginForm?.addEventListener("submit", handleLoginSubmit);
+
+  const restoredUser = restoreAuthSession();
+  if (restoredUser) {
+    finishLogin(restoredUser);
+    return;
+  }
+
+  showLoginScreen();
+  setConnectionPill("neutral", "Vui lòng đăng nhập");
+  setText("last-sync", "Chưa đăng nhập");
+  document.getElementById("login-username")?.focus();
+}
+
 function fetchDashboardData() {
   if (!dashboardConfig.dataUrl) {
     showSetupState("Chưa cấu hình tệp dữ liệu");
@@ -527,10 +651,9 @@ function fetchDashboardData() {
 
 function bootstrap() {
   renderClock();
-  setInterval(renderClock, 1000);
+  window.setInterval(renderClock, 1000);
   document.addEventListener("click", handleControlClick);
-  fetchDashboardData();
-  setInterval(fetchDashboardData, dashboardConfig.refreshMs || 4000);
+  initAuth();
 }
 
 window.addEventListener("DOMContentLoaded", bootstrap);

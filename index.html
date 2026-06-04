@@ -4,12 +4,35 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trạng thái môi trường</title>
-    <link rel="stylesheet" href="./styles.css?v=20260605a">
-    <script src="./config.js?v=20260605a"></script>
-    <script src="./app.js?v=20260605a" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=20260605c">
+    <script src="./config.js?v=20260605c"></script>
+    <script src="./app.js?v=20260605c" defer></script>
   </head>
   <body>
-    <div class="page-shell">
+    <div class="login-screen" id="login-screen">
+      <form class="login-card" id="login-form" autocomplete="on">
+        <div class="login-card-head">
+          <p class="login-eyebrow">Đăng nhập hệ thống</p>
+          <h1>TRẠNG THÁI MÔI TRƯỜNG</h1>
+          <p class="login-subtext">Nhập tên bất kỳ và mật khẩu để truy cập bảng điều khiển.</p>
+        </div>
+
+        <label class="field-group" for="login-username">
+          <span>Tên người dùng</span>
+          <input id="login-username" name="username" type="text" placeholder="Ví dụ: Cong2903" autocomplete="username" required>
+        </label>
+
+        <label class="field-group" for="login-password">
+          <span>Mật khẩu</span>
+          <input id="login-password" name="password" type="password" placeholder="Nhập mật khẩu" autocomplete="current-password" required>
+        </label>
+
+        <p class="login-error" id="login-error" hidden></p>
+        <button class="login-button" type="submit">Vào hệ thống</button>
+      </form>
+    </div>
+
+    <div class="page-shell is-locked" id="dashboard-shell">
       <header class="topbar">
         <div>
           <p class="eyebrow">Bảng điều khiển môi trường</p>
@@ -88,8 +111,8 @@
         <aside class="sidebar-panel">
           <article class="side-card clock-card">
             <h2>Thời gian hiện tại</h2>
-            <p class="clock-date" id="clock-date">--</p>
             <div class="clock-value" id="clock-value">--:--:--</div>
+            <p class="clock-date" id="clock-date">--</p>
             <p class="clock-subtext">Cập nhật thời gian thực</p>
           </article>
 
