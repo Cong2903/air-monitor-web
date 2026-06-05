@@ -246,7 +246,7 @@ body {
 
 .metrics-panel {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-template-rows: repeat(2, minmax(180px, 1fr));
   gap: var(--panel-gap);
   min-height: 0;
@@ -318,14 +318,21 @@ body {
 .light-card .sparkline .chart-line { color: var(--yellow); }
 .pressure-card .metric-icon,
 .pressure-card .sparkline .chart-line { color: var(--silver); }
-.gas-card .metric-icon,
-.gas-card .sparkline .chart-line { color: #5e91a8; }
+.iaq-card .metric-icon,
+.iaq-card .sparkline .chart-line { color: #5e91a8; }
+.mq9-card .metric-icon,
+.mq9-card .sparkline .chart-line { color: var(--red); }
 
 .temp-card .metric-icon { background: linear-gradient(135deg, #f5a34d, #e86b1d); }
 .hum-card .metric-icon { background: linear-gradient(135deg, #65b8ff, #2674d2); }
 .light-card .metric-icon { background: linear-gradient(135deg, #ffe278, #d5a200); }
 .pressure-card .metric-icon { background: linear-gradient(135deg, #bdc5d0, #7d8a98); }
-.gas-card .metric-icon { background: linear-gradient(135deg, #6eb1cf, #2f6f89); }
+.iaq-card .metric-icon { background: linear-gradient(135deg, #6eb1cf, #2f6f89); }
+.mq9-card .metric-icon { background: linear-gradient(135deg, #f28b8b, #cf4747); }
+
+.mq9-card {
+  grid-column: span 2;
+}
 
 .metric-value {
   position: relative;
@@ -403,16 +410,20 @@ body {
   stroke-linejoin: round;
 }
 
-.gas-card .chart-backdrop {
+.iaq-card .chart-backdrop {
   fill: rgba(244, 249, 252, 0.98);
 }
 
-.mq9-sensor-warning .gas-card .chart-backdrop {
+.mq9-card .chart-backdrop {
+  fill: rgba(252, 245, 245, 0.98);
+}
+
+.mq9-sensor-warning .mq9-card .chart-backdrop {
   fill: rgba(255, 245, 228, 0.96);
 }
 
-.mq9-sensor-danger .gas-card .chart-backdrop,
-.mq9-no-data .gas-card .chart-backdrop {
+.mq9-sensor-danger .mq9-card .chart-backdrop,
+.mq9-no-data .mq9-card .chart-backdrop {
   fill: rgba(246, 247, 250, 0.96);
 }
 
@@ -662,7 +673,8 @@ body {
   }
 
   .metrics-panel {
-    grid-template-rows: repeat(2, minmax(168px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: none;
   }
 }
 
@@ -708,6 +720,10 @@ body {
 
   .metrics-panel {
     grid-template-columns: 1fr;
+  }
+
+  .mq9-card {
+    grid-column: span 1;
   }
 
   .topbar {

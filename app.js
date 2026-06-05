@@ -4,7 +4,7 @@ const ACCESS_PASSWORD = "MangCamBien123";
 const AUTH_STORAGE_KEY = "air_monitor_web_auth";
 const COMMAND_UI_HOLD_MS = 2000;
 const CHART_HISTORY_LIMIT = 36;
-const METRIC_KEYS = ["temperatureC", "humidityPct", "lightLux", "pressureHpa", "mq9Ppm"];
+const METRIC_KEYS = ["temperatureC", "humidityPct", "lightLux", "pressureHpa", "bmeIaq", "mq9Ppm"];
 
 const appState = {
   latest: null,
@@ -24,6 +24,7 @@ const metricColors = {
   humidity: "#2e83dd",
   light: "#ddb113",
   pressure: "#8f99a6",
+  iaq: "#3f95b3",
   mq9: "#db5858"
 };
 
@@ -86,6 +87,14 @@ function vietnameseAlertSummary(level, fallbackText) {
 
 function formatNumber(value, digits = 1) {
   return Number.isFinite(value) ? value.toFixed(digits) : "--";
+}
+
+function formatIaqAccuracy(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return "A--";
+  }
+  return `A${Math.max(0, Math.min(3, Math.round(numericValue)))}`;
 }
 
 function formatAxisValue(value) {
@@ -296,6 +305,24 @@ function historySeries(key) {
   });
 }
 
+function chartTimeBounds(series) {
+  const timestamps = series
+    .map((point) => Number(point.timestamp))
+    .filter((timestamp) => Number.isFinite(timestamp));
+
+  if (!timestamps.length) {
+    const now = Date.now();
+    return { min: now, max: now + 1 };
+  }
+
+  const min = Math.min(...timestamps);
+  const max = Math.max(...timestamps);
+  return {
+    min,
+    max: max > min ? max : min + 1
+  };
+}
+
 function buildChartSvg(series, color, options = {}) {
   if (!series.length) {
     return "";
@@ -324,9 +351,15 @@ function buildChartSvg(series, color, options = {}) {
   const adjustedMin = min - range * 0.08;
   const adjustedMax = max + range * 0.08;
   const adjustedRange = adjustedMax - adjustedMin || 1;
+  const timeBounds = chartTimeBounds(series);
+  const timeRange = timeBounds.max - timeBounds.min || 1;
 
   const points = series.map((point, index) => {
-    const x = padding.left + (series.length === 1 ? innerWidth / 2 : (index / (series.length - 1)) * innerWidth);
+    const pointTimestamp = Number(point.timestamp);
+    const xRatio = Number.isFinite(pointTimestamp)
+      ? (pointTimestamp - timeBounds.min) / timeRange
+      : (series.length === 1 ? 0.5 : index / (series.length - 1));
+    const x = padding.left + innerWidth * Math.min(Math.max(xRatio, 0), 1);
     if (!Number.isFinite(point.value)) {
       return { x, y: null, timestamp: point.timestamp };
     }
@@ -430,7 +463,7 @@ function renderAlertBox(latest) {
   const alertLevel = fresh ? (latest.alertLevel || "no_data") : "no_data";
   const alertText = fresh ? vietnameseAlertText(alertLevel, latest.alertText) : "MẤT KẾT NỐI";
   const alertSummary = fresh ? vietnameseAlertSummary(alertLevel, latest.alertSummary) : "Không nhận được dữ liệu mới từ Node 2";
-  const mq9Card = document.querySelector(".gas-card");
+  const mq9Card = document.querySelector(".mq9-card");
 
   if (alertBox) {
     alertBox.className = "alert-box";
@@ -474,12 +507,14 @@ function renderMetrics(latest) {
   setText("humidity-value", fresh ? formatNumber(Number(latest.humidityPct), 0) : "--");
   setText("light-value", fresh ? formatNumber(Number(latest.lightLux), 0) : "--");
   setText("pressure-value", fresh ? formatNumber(Number(latest.pressureHpa), 1) : "--");
+  setText("iaq-value", fresh ? formatNumber(Number(latest.bmeIaq), 0) : "--");
+  setText("iaq-accuracy-text", `Độ chính xác: ${fresh ? formatIaqAccuracy(latest.iaqAccuracy) : "A--"}`);
   setText("mq9-value", fresh ? formatNumber(Number(latest.mq9Ppm), 0) : "--");
 }
 
 function renderMeta(latest) {
-  setText("device-name", latest.deviceName || dashboardConfig.deviceName || "TRẠNG THÁI MÔI TRƯỜNG");
-  setText("device-location", latest.location || dashboardConfig.locationLabel || "Hà Nội, VN");
+  setText("device-name", dashboardConfig.deviceName || latest.deviceName || "TRẠNG THÁI MÔI TRƯỜNG");
+  setText("device-location", dashboardConfig.locationLabel || latest.location || "Hà Nội, VN");
   appState.lastSyncText = isPayloadFresh(latest)
     ? formatDateTime(latest.serverTimestampIso || latest.receivedAt)
     : "Mất đồng bộ dữ liệu";
@@ -575,6 +610,7 @@ function renderAllCharts() {
   renderChart("humidity-sparkline", "humidityPct", metricColors.humidity);
   renderChart("light-sparkline", "lightLux", metricColors.light);
   renderChart("pressure-sparkline", "pressureHpa", metricColors.pressure);
+  renderChart("iaq-sparkline", "bmeIaq", metricColors.iaq);
   renderChart("mq9-sparkline", "mq9Ppm", metricColors.mq9, {
     height: 136,
     padding: { top: 12, right: 16, bottom: 30, left: 46 }

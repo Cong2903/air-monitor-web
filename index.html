@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trạng thái môi trường</title>
-    <link rel="stylesheet" href="./styles.css?v=20260605d">
-    <script src="./config.js?v=20260605d"></script>
-    <script src="./app.js?v=20260605d" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=20260605e">
+    <script src="./config.js?v=20260605e"></script>
+    <script src="./app.js?v=20260605e" defer></script>
   </head>
   <body>
     <div class="login-screen" id="login-screen">
@@ -93,9 +93,21 @@
             <div class="sparkline" id="pressure-sparkline"></div>
           </article>
 
-          <article class="metric-card gas-card">
+          <article class="metric-card iaq-card">
             <div class="metric-head">
               <span class="metric-icon" aria-hidden="true">&#9729;</span>
+              <div>
+                <h2>Chỉ số IAQ</h2>
+                <p id="iaq-accuracy-text">Độ chính xác: A0</p>
+              </div>
+            </div>
+            <div class="metric-value"><span id="iaq-value">--</span><small>IAQ</small></div>
+            <div class="sparkline" id="iaq-sparkline"></div>
+          </article>
+
+          <article class="metric-card mq9-card">
+            <div class="metric-head">
+              <span class="metric-icon" aria-hidden="true">&#9888;</span>
               <div>
                 <h2>Cảm biến MQ9 (Gas/CO)</h2>
                 <p id="mq9-status-text">Đang chờ dữ liệu</p>
