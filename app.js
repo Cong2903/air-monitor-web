@@ -636,8 +636,8 @@ function renderAllCharts() {
   renderChart("humidity-sparkline", "humidityPct", metricColors.humidity);
   renderChart("light-sparkline", "lightLux", metricColors.light);
   renderChart("pressure-sparkline", "pressureHpa", metricColors.pressure);
-  renderChart("iaq-sparkline", "bmeIaq", metricColors.iaq);
-  renderChart("mq9-sparkline", "mq9Ppm", metricColors.mq9, {
+  renderChart("mq9-sparkline", "mq9Ppm", metricColors.mq9);
+  renderChart("iaq-sparkline", "bmeIaq", metricColors.iaq, {
     height: 136,
     padding: { top: 12, right: 16, bottom: 30, left: 46 }
   });

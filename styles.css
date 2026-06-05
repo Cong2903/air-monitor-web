@@ -330,7 +330,7 @@ body {
 .iaq-card .metric-icon { background: linear-gradient(135deg, #6eb1cf, #2f6f89); }
 .mq9-card .metric-icon { background: linear-gradient(135deg, #f28b8b, #cf4747); }
 
-.mq9-card {
+.iaq-card {
   grid-column: span 2;
 }
 
@@ -722,7 +722,7 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .mq9-card {
+  .iaq-card {
     grid-column: span 1;
   }
 
