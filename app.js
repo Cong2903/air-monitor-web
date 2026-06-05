@@ -97,6 +97,31 @@ function formatIaqAccuracy(value) {
   return `A${Math.max(0, Math.min(3, Math.round(numericValue)))}`;
 }
 
+function parseMetricValue(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function isMetricAvailable(latest, key) {
+  if (!isPayloadFresh(latest)) {
+    return false;
+  }
+
+  if (key === "lightLux") {
+    return latest?.bh1750Status === "OK";
+  }
+
+  if (key === "mq9Ppm") {
+    return latest?.mq9Status === "OK";
+  }
+
+  return latest?.bme680Status === "OK";
+}
+
 function formatAxisValue(value) {
   if (!Number.isFinite(value)) {
     return "--";
@@ -238,9 +263,9 @@ function seedChartHistory(latest, rawHistory) {
     let hasAnyValue = false;
 
     METRIC_KEYS.forEach((key) => {
-      const numericValue = Number(entry?.[key]);
-      seededEntry[key] = Number.isFinite(numericValue) ? numericValue : null;
-      hasAnyValue = hasAnyValue || Number.isFinite(numericValue);
+      const numericValue = parseMetricValue(entry?.[key]);
+      seededEntry[key] = numericValue;
+      hasAnyValue = hasAnyValue || numericValue !== null;
     });
 
     if (hasAnyValue) {
@@ -287,8 +312,7 @@ function recordChartSample(latest, rawHistory) {
   const liveEntry = { timestamp };
 
   METRIC_KEYS.forEach((key) => {
-    const numericValue = Number(latest[key]);
-    liveEntry[key] = Number.isFinite(numericValue) ? numericValue : null;
+    liveEntry[key] = isMetricAvailable(latest, key) ? parseMetricValue(latest[key]) : null;
   });
 
   appendChartEntry(liveEntry);
@@ -297,10 +321,9 @@ function recordChartSample(latest, rawHistory) {
 
 function historySeries(key) {
   return appState.chartHistory.map((entry) => {
-    const numericValue = Number(entry[key]);
     return {
       timestamp: entry.timestamp,
-      value: Number.isFinite(numericValue) ? numericValue : null
+      value: parseMetricValue(entry[key])
     };
   });
 }
@@ -502,14 +525,17 @@ function renderActuators(latest) {
 }
 
 function renderMetrics(latest) {
-  const fresh = isPayloadFresh(latest);
-  setText("temperature-value", fresh ? formatNumber(Number(latest.temperatureC), 1) : "--");
-  setText("humidity-value", fresh ? formatNumber(Number(latest.humidityPct), 0) : "--");
-  setText("light-value", fresh ? formatNumber(Number(latest.lightLux), 0) : "--");
-  setText("pressure-value", fresh ? formatNumber(Number(latest.pressureHpa), 1) : "--");
-  setText("iaq-value", fresh ? formatNumber(Number(latest.bmeIaq), 0) : "--");
-  setText("iaq-accuracy-text", `Độ chính xác: ${fresh ? formatIaqAccuracy(latest.iaqAccuracy) : "A--"}`);
-  setText("mq9-value", fresh ? formatNumber(Number(latest.mq9Ppm), 0) : "--");
+  const bmeOk = isMetricAvailable(latest, "temperatureC");
+  const lightOk = isMetricAvailable(latest, "lightLux");
+  const mq9Ok = isMetricAvailable(latest, "mq9Ppm");
+
+  setText("temperature-value", bmeOk ? formatNumber(parseMetricValue(latest.temperatureC), 1) : "--");
+  setText("humidity-value", bmeOk ? formatNumber(parseMetricValue(latest.humidityPct), 0) : "--");
+  setText("light-value", lightOk ? formatNumber(parseMetricValue(latest.lightLux), 0) : "--");
+  setText("pressure-value", bmeOk ? formatNumber(parseMetricValue(latest.pressureHpa), 1) : "--");
+  setText("iaq-value", bmeOk ? formatNumber(parseMetricValue(latest.bmeIaq), 0) : "--");
+  setText("iaq-accuracy-text", `Độ chính xác: ${bmeOk ? formatIaqAccuracy(latest.iaqAccuracy) : "A--"}`);
+  setText("mq9-value", mq9Ok ? formatNumber(parseMetricValue(latest.mq9Ppm), 0) : "--");
 }
 
 function renderMeta(latest) {
