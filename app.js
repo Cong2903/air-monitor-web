@@ -2,7 +2,7 @@ const dashboardConfig = window.dashboardConfig || {};
 
 const ACCESS_PASSWORD = "MangCamBien123";
 const AUTH_STORAGE_KEY = "air_monitor_web_auth";
-const COMMAND_UI_HOLD_MS = 2000;
+const COMMAND_UI_HOLD_MS = 3000;
 const CHART_HISTORY_LIMIT = 36;
 const METRIC_KEYS = ["temperatureC", "humidityPct", "lightLux", "pressureHpa", "bmeIaq", "mq9Ppm"];
 

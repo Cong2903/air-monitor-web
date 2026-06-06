@@ -595,11 +595,10 @@ body {
   color: #4a5667;
   background: #eef3f8;
   cursor: pointer;
-  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .control-button:hover:not(:disabled) {
-  transform: translateY(-1px);
   background: #e6eef9;
 }
 
