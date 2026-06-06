@@ -93,6 +93,50 @@ function vietnameseAlertSummary(level, fallbackText) {
   return map[level] || fallbackText || "Đang chờ dữ liệu từ Node 1";
 }
 
+function translateAlertReason(reasonCode) {
+  const map = {
+    normal: "Môi trường ổn định",
+    high_temp: "Nhiệt độ cao",
+    poor_air: "Không khí ô nhiễm",
+    gas_detected: "Có khí gas bất thường",
+    flammable_gas: "Khí dễ cháy",
+    low_light: "Ánh sáng yếu",
+    high_light: "Ánh sáng quá sáng",
+    sensor_error_bme680: "Lỗi cảm biến BME680",
+    sensor_error_bh1750: "Lỗi cảm biến BH1750",
+    sensor_error_mq9: "Lỗi cảm biến MQ9",
+    no_data: "Mất dữ liệu từ Node 1",
+    env_warning: "Môi trường có dấu hiệu bất thường",
+    env_danger: "Môi trường nguy hiểm"
+  };
+  return map[reasonCode] || "";
+}
+
+function alertReasonSummary(latest, alertLevel) {
+  if (!isPayloadFresh(latest)) {
+    return "Không nhận được dữ liệu mới từ Node 2";
+  }
+
+  if (Array.isArray(latest?.alertReasons) && latest.alertReasons.length) {
+    const translated = latest.alertReasons
+      .map((reasonCode) => translateAlertReason(String(reasonCode)))
+      .filter(Boolean);
+
+    if (translated.length) {
+      return translated.join(", ");
+    }
+  }
+
+  if (latest?.alertReason) {
+    const translated = translateAlertReason(String(latest.alertReason));
+    if (translated) {
+      return translated;
+    }
+  }
+
+  return vietnameseAlertSummary(alertLevel, latest?.alertSummary);
+}
+
 function formatNumber(value, digits = 1) {
   return Number.isFinite(value) ? value.toFixed(digits) : "--";
 }
@@ -509,7 +553,7 @@ function renderAlertBox(latest) {
   const fresh = isPayloadFresh(latest);
   const alertLevel = fresh ? (latest.alertLevel || "no_data") : "no_data";
   const alertText = fresh ? vietnameseAlertText(alertLevel, latest.alertText) : "MẤT KẾT NỐI";
-  const alertSummary = fresh ? vietnameseAlertSummary(alertLevel, latest.alertSummary) : "Không nhận được dữ liệu mới từ Node 2";
+  const alertSummary = alertReasonSummary(latest, alertLevel);
   const mq9Card = document.querySelector(".mq9-card");
 
   if (alertBox) {
