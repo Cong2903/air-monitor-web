@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trạng thái môi trường</title>
-    <link rel="stylesheet" href="./styles.css?v=20260606a">
+    <link rel="stylesheet" href="./styles.css?v=20260606b">
     <script src="./config.js?v=20260605e"></script>
-    <script src="./app.js?v=20260606a" defer></script>
+    <script src="./app.js?v=20260606b" defer></script>
   </head>
   <body>
     <div class="login-screen" id="login-screen">
@@ -14,13 +14,8 @@
         <div class="login-card-head">
           <p class="login-eyebrow">Đăng nhập hệ thống</p>
           <h1>TRẠNG THÁI MÔI TRƯỜNG</h1>
-          <p class="login-subtext">Nhập tên bất kỳ và mật khẩu để truy cập bảng điều khiển.</p>
+          <p class="login-subtext">Nhập mật khẩu để truy cập bảng điều khiển.</p>
         </div>
-
-        <label class="field-group" for="login-username">
-          <span>Tên người dùng</span>
-          <input id="login-username" name="username" type="text" placeholder="Ví dụ: Cong2903" autocomplete="username" required>
-        </label>
 
         <label class="field-group" for="login-password">
           <span>Mật khẩu</span>
@@ -135,8 +130,8 @@
                 <strong id="fan-state">TẮT</strong>
               </div>
               <div class="status-row">
-                <span>Sưởi</span>
-                <strong id="heater-state">TẮT</strong>
+                <span>Đèn</span>
+                <strong id="light-state">TẮT</strong>
               </div>
               <div class="status-row">
                 <span>Còi</span>
@@ -166,17 +161,17 @@
               <div class="control-group">
                 <div class="control-head">
                   <div class="control-title">
-                    <span class="control-icon" aria-hidden="true">&#128293;</span>
+                    <span class="control-icon" aria-hidden="true">&#128161;</span>
                     <div>
-                      <strong>Máy sưởi</strong>
-                      <small id="heater-mode-text">Đang tự động</small>
+                      <strong>Đèn</strong>
+                      <small id="light-mode-text">Đang tự động</small>
                     </div>
                   </div>
-                  <div class="control-buttons" id="heater-controls"></div>
+                  <div class="control-buttons" id="light-controls"></div>
                 </div>
               </div>
 
-              <p class="control-note" id="control-note">Bấm để điều khiển quạt và sưởi từ web</p>
+              <p class="control-note" id="control-note">Bấm để điều khiển quạt và đèn từ web</p>
             </div>
 
             <div class="chips-block">

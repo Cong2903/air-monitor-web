@@ -1,4 +1,4 @@
-const dashboardConfig = window.dashboardConfig || {};
+﻿const dashboardConfig = window.dashboardConfig || {};
 
 const ACCESS_PASSWORD = "MangCamBien123";
 const AUTH_STORAGE_KEY = "air_monitor_web_auth";
@@ -13,7 +13,7 @@ const appState = {
   lastChartSampleKey: "",
   lastSyncText: "Chưa đồng bộ dữ liệu",
   commandBusy: false,
-  commandMessage: "Bấm để điều khiển quạt và sưởi từ web",
+  commandMessage: "Bấm để điều khiển quạt và đèn từ web",
   refreshTimerId: null,
   pendingControl: null,
   pendingControlTimerId: null
@@ -50,6 +50,14 @@ function sanitizeMode(value) {
     return value;
   }
   return "auto";
+}
+
+function readLightMode(latest) {
+  return sanitizeMode(latest?.lightMode ?? latest?.heaterMode);
+}
+
+function readLightOn(latest) {
+  return Boolean(latest?.lightOn ?? latest?.heaterOn);
 }
 
 function modeLabel(value) {
@@ -535,7 +543,7 @@ function renderAlertBox(latest) {
 function renderActuators(latest) {
   const fresh = isPayloadFresh(latest);
   setText("fan-state", onOffText(fresh && latest.fanOn));
-  setText("heater-state", onOffText(fresh && latest.heaterOn));
+  setText("light-state", onOffText(fresh && readLightOn(latest)));
   setText("buzzer-state", onOffText(fresh && latest.buzzerOn));
   setText("wifi-rssi", fresh && Number.isFinite(latest.wifiRssi) ? `${latest.wifiRssi} dBm` : "--");
 }
@@ -636,14 +644,14 @@ function renderControls(latest) {
   const effectiveFanMode = appState.pendingControl
     ? appState.pendingControl.fanMode
     : sanitizeMode(latest?.fanMode);
-  const effectiveHeaterMode = appState.pendingControl
-    ? appState.pendingControl.heaterMode
-    : sanitizeMode(latest?.heaterMode);
+  const effectiveLightMode = appState.pendingControl
+    ? appState.pendingControl.lightMode
+    : readLightMode(latest);
 
   renderControlButtons("fan", effectiveFanMode);
-  renderControlButtons("heater", effectiveHeaterMode);
+  renderControlButtons("light", effectiveLightMode);
   setText("fan-mode-text", modeLabel(effectiveFanMode));
-  setText("heater-mode-text", modeLabel(effectiveHeaterMode));
+  setText("light-mode-text", modeLabel(effectiveLightMode));
   setText("control-note", appState.commandMessage);
 }
 
@@ -700,29 +708,30 @@ function showSetupState(message) {
   }
 }
 
-function buildCommandPayload(nextFanMode, nextHeaterMode) {
+function buildCommandPayload(nextFanMode, nextLightMode) {
   return {
     seq: Date.now(),
     requestedAt: new Date().toISOString(),
     source: "web",
     fanMode: sanitizeMode(nextFanMode),
-    heaterMode: sanitizeMode(nextHeaterMode)
+    lightMode: sanitizeMode(nextLightMode),
+    heaterMode: sanitizeMode(nextLightMode)
   };
 }
 
-function sendCommand(nextFanMode, nextHeaterMode) {
+function sendCommand(nextFanMode, nextLightMode) {
   if (!dashboardConfig.commandUrl) {
     appState.commandMessage = "Chưa cấu hình đường dẫn lệnh Firebase";
     renderControls(appState.latest);
     return;
   }
 
-  const payload = buildCommandPayload(nextFanMode, nextHeaterMode);
+  const payload = buildCommandPayload(nextFanMode, nextLightMode);
   const previousFanMode = sanitizeMode(appState.latest?.fanMode);
-  const previousHeaterMode = sanitizeMode(appState.latest?.heaterMode);
+  const previousLightMode = readLightMode(appState.latest);
   appState.pendingControl = {
     fanMode: payload.fanMode,
-    heaterMode: payload.heaterMode,
+    lightMode: payload.lightMode,
     seq: payload.seq,
     startedAt: Date.now(),
     expiresAt: Date.now() + COMMAND_UI_HOLD_MS
@@ -731,7 +740,8 @@ function sendCommand(nextFanMode, nextHeaterMode) {
 
   if (appState.latest) {
     appState.latest.fanMode = payload.fanMode;
-    appState.latest.heaterMode = payload.heaterMode;
+    appState.latest.lightMode = payload.lightMode;
+    appState.latest.heaterMode = payload.lightMode;
     appState.latest.commandSeq = payload.seq;
   }
 
@@ -762,7 +772,8 @@ function sendCommand(nextFanMode, nextHeaterMode) {
       clearPendingControl();
       if (appState.latest) {
         appState.latest.fanMode = previousFanMode;
-        appState.latest.heaterMode = previousHeaterMode;
+        appState.latest.lightMode = previousLightMode;
+        appState.latest.heaterMode = previousLightMode;
       }
       appState.commandMessage = "Gửi lệnh thất bại, hãy thử lại";
       renderControls(appState.latest);
@@ -782,12 +793,8 @@ function handleControlClick(event) {
   const device = button.dataset.device;
   const mode = sanitizeMode(button.dataset.mode);
   const nextFanMode = device === "fan" ? mode : sanitizeMode(appState.latest.fanMode);
-  const nextHeaterMode = device === "heater" ? mode : sanitizeMode(appState.latest.heaterMode);
-  sendCommand(nextFanMode, nextHeaterMode);
-}
-
-function normalizeUserName(value) {
-  return String(value || "").trim();
+  const nextLightMode = device === "light" ? mode : readLightMode(appState.latest);
+  sendCommand(nextFanMode, nextLightMode);
 }
 
 function setLoginError(message = "") {
@@ -798,9 +805,8 @@ function setLoginError(message = "") {
   }
 }
 
-function persistAuthSession(userName) {
+function persistAuthSession() {
   sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
-    userName,
     authenticatedAt: Date.now()
   }));
 }
@@ -809,12 +815,11 @@ function restoreAuthSession() {
   try {
     const raw = sessionStorage.getItem(AUTH_STORAGE_KEY);
     if (!raw) {
-      return "";
+      return false;
     }
-    const parsed = JSON.parse(raw);
-    return normalizeUserName(parsed.userName);
+    return Boolean(JSON.parse(raw)?.authenticatedAt);
   } catch {
-    return "";
+    return false;
   }
 }
 
@@ -859,8 +864,8 @@ function stopDataRefresh() {
   }
 }
 
-function finishLogin(userName) {
-  persistAuthSession(userName);
+function finishLogin() {
+  persistAuthSession();
   setLoginError("");
   showDashboard();
   startDataRefresh();
@@ -869,16 +874,8 @@ function finishLogin(userName) {
 function handleLoginSubmit(event) {
   event.preventDefault();
 
-  const userNameInput = document.getElementById("login-username");
   const passwordInput = document.getElementById("login-password");
-  const userName = normalizeUserName(userNameInput?.value);
   const password = String(passwordInput?.value || "");
-
-  if (!userName) {
-    setLoginError("Vui lòng nhập tên người dùng.");
-    userNameInput?.focus();
-    return;
-  }
 
   if (password !== ACCESS_PASSWORD) {
     setLoginError("Mật khẩu chưa đúng. Hãy thử lại.");
@@ -887,23 +884,23 @@ function handleLoginSubmit(event) {
     return;
   }
 
-  finishLogin(userName);
+  finishLogin();
 }
 
 function initAuth() {
   const loginForm = document.getElementById("login-form");
   loginForm?.addEventListener("submit", handleLoginSubmit);
 
-  const restoredUser = restoreAuthSession();
-  if (restoredUser) {
-    finishLogin(restoredUser);
+  const restoredAuth = restoreAuthSession();
+  if (restoredAuth) {
+    finishLogin();
     return;
   }
 
   showLoginScreen();
-  setConnectionPill("neutral", "Vui lòng đăng nhập");
+  setConnectionPill("neutral", "Vui lòng nhập mật khẩu");
   setText("last-sync", "Chưa đăng nhập");
-  document.getElementById("login-username")?.focus();
+  document.getElementById("login-password")?.focus();
 }
 
 function fetchDashboardData() {
@@ -939,3 +936,5 @@ function bootstrap() {
 }
 
 window.addEventListener("DOMContentLoaded", bootstrap);
+
+
