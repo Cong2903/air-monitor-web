@@ -89,6 +89,22 @@ function formatNumber(value, digits = 1) {
   return Number.isFinite(value) ? value.toFixed(digits) : "--";
 }
 
+function formatMq9Display(value) {
+  if (!Number.isFinite(value)) {
+    return "--";
+  }
+  if (Math.abs(value) < 1) {
+    return value.toFixed(3);
+  }
+  if (Math.abs(value) < 10) {
+    return value.toFixed(2);
+  }
+  if (Math.abs(value) < 100) {
+    return value.toFixed(1);
+  }
+  return value.toFixed(0);
+}
+
 function formatIaqAccuracy(value) {
   const numericValue = Number(value);
   if (!Number.isFinite(numericValue)) {
@@ -535,7 +551,7 @@ function renderMetrics(latest) {
   setText("pressure-value", bmeOk ? formatNumber(parseMetricValue(latest.pressureHpa), 1) : "--");
   setText("iaq-value", bmeOk ? formatNumber(parseMetricValue(latest.bmeIaq), 0) : "--");
   setText("iaq-accuracy-text", `Độ chính xác: ${bmeOk ? formatIaqAccuracy(latest.iaqAccuracy) : "A--"}`);
-  setText("mq9-value", mq9Ok ? formatNumber(parseMetricValue(latest.mq9Ppm), 0) : "--");
+  setText("mq9-value", mq9Ok ? formatMq9Display(parseMetricValue(latest.mq9Ppm)) : "--");
 }
 
 function renderMeta(latest) {

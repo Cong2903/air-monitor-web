@@ -246,7 +246,7 @@ body {
 
 .metrics-panel {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(2, minmax(180px, 1fr));
   gap: var(--panel-gap);
   min-height: 0;
@@ -329,10 +329,6 @@ body {
 .pressure-card .metric-icon { background: linear-gradient(135deg, #bdc5d0, #7d8a98); }
 .iaq-card .metric-icon { background: linear-gradient(135deg, #6eb1cf, #2f6f89); }
 .mq9-card .metric-icon { background: linear-gradient(135deg, #f28b8b, #cf4747); }
-
-.iaq-card {
-  grid-column: span 2;
-}
 
 .metric-value {
   position: relative;
@@ -455,23 +451,6 @@ body {
 .alert-card {
   display: flex;
   flex-direction: column;
-}
-
-.clock-value {
-  margin-top: 22px;
-  font-size: var(--clock-value-size);
-  font-weight: 800;
-  line-height: 1;
-}
-
-.clock-date {
-  margin-top: 14px;
-  font-size: clamp(14px, 1vw, 16px);
-}
-
-.clock-card .clock-subtext {
-  margin-top: 22px;
-  font-size: clamp(13px, 0.95vw, 15px);
 }
 
 .alert-box {
@@ -657,6 +636,39 @@ body {
   padding: clamp(9px, 0.9vw, 10px) clamp(14px, 1.2vw, 18px);
 }
 
+.bottom-clock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 18px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.bottom-clock-label {
+  color: var(--muted);
+  font-size: clamp(12px, 0.9vw, 13px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.bottom-clock-value {
+  font-size: clamp(30px, 2.6vw, 42px);
+  line-height: 1;
+  font-weight: 800;
+}
+
+.bottom-clock-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: var(--muted);
+  font-size: clamp(13px, 0.95vw, 15px);
+  font-weight: 600;
+}
+
 .panel-line {
   display: flex;
   flex-wrap: wrap;
@@ -669,11 +681,6 @@ body {
 @media (max-width: 1400px) {
   .dashboard-grid {
     grid-template-columns: minmax(0, 1fr) 280px;
-  }
-
-  .metrics-panel {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: none;
   }
 }
 
@@ -721,10 +728,6 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .iaq-card {
-    grid-column: span 1;
-  }
-
   .topbar {
     flex-direction: column;
     align-items: flex-start;
@@ -737,5 +740,10 @@ body {
 
   .control-buttons {
     grid-template-columns: 1fr;
+  }
+
+  .bottom-clock {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
