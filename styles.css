@@ -21,7 +21,7 @@
   --card-radius: clamp(18px, 1.3vw, 22px);
   --card-padding: clamp(12px, 1vw, 15px);
   --metric-value-size: clamp(27px, 2.35vw, 42px);
-  --clock-value-size: clamp(30px, 3vw, 50px);
+  --clock-value-size: clamp(13px, 0.95vw, 15px);
   --sparkline-height: clamp(82px, 11vh, 96px);
 }
 
@@ -574,7 +574,7 @@ body {
   color: #4a5667;
   background: #eef3f8;
   cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
 
 .control-button:hover:not(:disabled) {
@@ -582,14 +582,36 @@ body {
 }
 
 .control-button.active {
-  color: #fff;
-  background: linear-gradient(135deg, #4b9df0, #2569c9);
-  box-shadow: 0 10px 18px rgba(37, 105, 201, 0.24);
+  color: #4a5667;
+  background: #eef3f8;
+  box-shadow: none;
+}
+
+.control-button.is-flashing {
+  animation: buttonFlash 0.28s ease;
 }
 
 .control-button:disabled {
   cursor: wait;
   opacity: 0.7;
+}
+
+@keyframes buttonFlash {
+  0% {
+    background: #eef3f8;
+    transform: scale(1);
+    box-shadow: none;
+  }
+  45% {
+    background: #d9e8fb;
+    transform: scale(0.96);
+    box-shadow: 0 0 0 4px rgba(75, 157, 240, 0.16);
+  }
+  100% {
+    background: #eef3f8;
+    transform: scale(1);
+    box-shadow: none;
+  }
 }
 
 .control-note {
@@ -655,9 +677,9 @@ body {
 }
 
 .bottom-clock-value {
-  font-size: clamp(30px, 2.6vw, 42px);
+  font-size: var(--clock-value-size);
   line-height: 1;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .bottom-clock-meta {
