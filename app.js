@@ -1,4 +1,4 @@
-﻿const dashboardConfig = window.dashboardConfig || {};
+const dashboardConfig = window.dashboardConfig || {};
 
 const ACCESS_PASSWORD = "MangCamBien123";
 const AUTH_STORAGE_KEY = "air_monitor_web_auth";
@@ -16,7 +16,11 @@ const appState = {
   commandMessage: "Bấm để điều khiển quạt và đèn từ web",
   refreshTimerId: null,
   pendingControl: null,
-  pendingControlTimerId: null
+  pendingControlTimerId: null,
+  controlState: {
+    fanMode: "auto",
+    lightMode: "auto"
+  }
 };
 
 const metricColors = {
@@ -58,6 +62,41 @@ function readLightMode(latest) {
 
 function readLightOn(latest) {
   return Boolean(latest?.lightOn ?? latest?.heaterOn);
+}
+
+function setCachedControlModes(fanMode, lightMode) {
+  appState.controlState.fanMode = sanitizeMode(fanMode);
+  appState.controlState.lightMode = sanitizeMode(lightMode);
+}
+
+function effectiveFanMode() {
+  if (appState.pendingControl) {
+    return appState.pendingControl.fanMode;
+  }
+  return sanitizeMode(appState.controlState.fanMode);
+}
+
+function effectiveLightMode() {
+  if (appState.pendingControl) {
+    return appState.pendingControl.lightMode;
+  }
+  return sanitizeMode(appState.controlState.lightMode);
+}
+
+function syncCachedControlModesFromLatest(latest) {
+  if (!latest) {
+    return;
+  }
+
+  const latestFanMode = sanitizeMode(latest?.fanMode);
+  const latestLightMode = readLightMode(latest);
+  const latestCommandSeq = Number(latest?.commandSeq || 0);
+  const pendingSeq = Number(appState.pendingControl?.seq || 0);
+  const canTrustLatestModes = isPayloadFresh(latest) || latestCommandSeq >= pendingSeq;
+
+  if (canTrustLatestModes) {
+    setCachedControlModes(latestFanMode, latestLightMode);
+  }
 }
 
 function modeLabel(value) {
@@ -685,18 +724,23 @@ function holdPendingControlForUi() {
 function renderControls(latest) {
   syncPendingControlWithLatest(latest);
 
-  const effectiveFanMode = appState.pendingControl
-    ? appState.pendingControl.fanMode
-    : sanitizeMode(latest?.fanMode);
-  const effectiveLightMode = appState.pendingControl
-    ? appState.pendingControl.lightMode
-    : readLightMode(latest);
+  const activeFanMode = effectiveFanMode();
+  const activeLightMode = effectiveLightMode();
 
-  renderControlButtons("fan", effectiveFanMode);
-  renderControlButtons("light", effectiveLightMode);
-  setText("fan-mode-text", modeLabel(effectiveFanMode));
-  setText("light-mode-text", modeLabel(effectiveLightMode));
+  renderControlButtons("fan", activeFanMode);
+  renderControlButtons("light", activeLightMode);
+  setText("fan-mode-text", modeLabel(activeFanMode));
+  setText("light-mode-text", modeLabel(activeLightMode));
   setText("control-note", appState.commandMessage);
+}
+
+function flashControlButton(button) {
+  button.classList.remove("is-flashing");
+  void button.offsetWidth;
+  button.classList.add("is-flashing");
+  window.setTimeout(() => {
+    button.classList.remove("is-flashing");
+  }, 320);
 }
 
 function renderAllCharts() {
@@ -716,6 +760,7 @@ function renderDashboard(payload) {
   const history = Array.isArray(payload.history) ? payload.history : [];
 
   appState.latest = latest;
+  syncCachedControlModesFromLatest(latest);
   appState.history = history.length ? history : [latest];
   recordChartSample(latest, history);
 
@@ -749,7 +794,11 @@ function showSetupState(message) {
     renderMeta(appState.latest);
     renderControls(appState.latest);
     renderAllCharts();
+    return;
   }
+
+  renderControls(null);
+  renderAllCharts();
 }
 
 function buildCommandPayload(nextFanMode, nextLightMode) {
@@ -771,8 +820,8 @@ function sendCommand(nextFanMode, nextLightMode) {
   }
 
   const payload = buildCommandPayload(nextFanMode, nextLightMode);
-  const previousFanMode = sanitizeMode(appState.latest?.fanMode);
-  const previousLightMode = readLightMode(appState.latest);
+  const previousFanMode = effectiveFanMode();
+  const previousLightMode = effectiveLightMode();
   appState.pendingControl = {
     fanMode: payload.fanMode,
     lightMode: payload.lightMode,
@@ -780,6 +829,7 @@ function sendCommand(nextFanMode, nextLightMode) {
     startedAt: Date.now(),
     expiresAt: Date.now() + COMMAND_UI_HOLD_MS
   };
+  setCachedControlModes(payload.fanMode, payload.lightMode);
   holdPendingControlForUi();
 
   if (appState.latest) {
@@ -814,6 +864,7 @@ function sendCommand(nextFanMode, nextLightMode) {
     })
     .catch(() => {
       clearPendingControl();
+      setCachedControlModes(previousFanMode, previousLightMode);
       if (appState.latest) {
         appState.latest.fanMode = previousFanMode;
         appState.latest.lightMode = previousLightMode;
@@ -830,14 +881,16 @@ function sendCommand(nextFanMode, nextLightMode) {
 
 function handleControlClick(event) {
   const button = event.target.closest(".control-button");
-  if (!button || appState.commandBusy || !appState.latest) {
+  if (!button || appState.commandBusy) {
     return;
   }
 
+  flashControlButton(button);
+
   const device = button.dataset.device;
   const mode = sanitizeMode(button.dataset.mode);
-  const nextFanMode = device === "fan" ? mode : sanitizeMode(appState.latest.fanMode);
-  const nextLightMode = device === "light" ? mode : readLightMode(appState.latest);
+  const nextFanMode = device === "fan" ? mode : effectiveFanMode();
+  const nextLightMode = device === "light" ? mode : effectiveLightMode();
   sendCommand(nextFanMode, nextLightMode);
 }
 
